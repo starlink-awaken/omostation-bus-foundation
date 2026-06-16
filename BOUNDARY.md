@@ -24,7 +24,7 @@
 
 - agora
 - runtime
-- llm-gateway
+- aetherforge (packages/gateway/)
 - omo
 
 ## 4. 配置 / SSOT
