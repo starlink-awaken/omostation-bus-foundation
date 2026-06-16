@@ -1,0 +1,50 @@
+# bus-foundation — Architecture
+
+> **Layer**: X 横切框架  
+> **Role**: 共享事件/传输总线 — pub/sub/schedule/DLQ  
+> **Stack**: Python 3.10+, uv, pydantic only runtime dep  
+> **Health**: 56-59 tests
+>
+> 系统全景参见：[`docs/ARCHITECTURE-DIAGRAM.md`](../docs/ARCHITECTURE-DIAGRAM.md)
+
+---
+
+## 1. 内部架构
+
+```mermaid
+
+graph TB
+    App[Application]
+    Facade[bus_foundation facade]
+    Router[Router]
+    BE[Backends]
+    DLQ[DLQ SQLite]
+
+    App -->|publish/subscribe/schedule| Facade
+    Facade --> Router
+    Router --> BE
+    Router -->|on failure| DLQ
+
+```
+
+## 2. 入口
+
+| Type | Entry | Port / Notes |
+|:--|:--|:--|
+| Library API | `from bus_foundation import publish, subscribe, schedule` |  |
+
+## 3. 核心模块
+
+| Module | Responsibility |
+|:--|:--|
+| `src/bus_foundation/__init__.py` | Facade + backend registry |
+| `src/bus_foundation/envelope.py` | BusEnvelope wire format |
+| `src/bus_foundation/router.py` | Backend dispatch + DLQ fallback |
+| `src/bus_foundation/dlq.py` | SQLite dead-letter queue |
+| `src/bus_foundation/backends/` | 8 backends: eventbus/asyncio/croniter/sse/ws/... |
+
+## 4. 测试
+
+```bash
+cd projects/bus-foundation && uv run pytest -q
+```
