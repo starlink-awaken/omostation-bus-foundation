@@ -5,19 +5,26 @@ Fire-and-forget semantics.
 """
 from typing import Any
 
-from .. import publish
-from ..envelope import BusEnvelope
+from ..backends.data_plane import DataPlaneBackend
+from ..envelope import OmniEnvelope, OmniPlane
 
+_data_backend = DataPlaneBackend()
 
-def emit(topic: str, payload: dict[str, Any], source_uri: str = "bos://capability/bus/data", trace_id: str = None) -> None:
+def emit(topic: str, payload: dict[str, Any], source_uri: str = "bos://capability/bus/data", trace_id: str = "") -> None:
     """
-    Emit a data event. Non-blocking, fire-and-forget.
+    Emit a data event. Non-blocking, fire-and-forget, routed via Ring Buffer.
     """
-    envelope = BusEnvelope(
-        type=topic,  # Legacy mapping: topic -> type
-        source=source_uri,
+    envelope = OmniEnvelope(
+        plane=OmniPlane.DATA,
+        topic=topic,
+        source_uri=source_uri,
         payload=payload,
         trace_id=trace_id,
-        backend="eventbus" # For now, route to simple eventbus
     )
-    publish(envelope)
+    _data_backend.publish(envelope)
+
+def subscribe(pattern: str, callback: Any) -> str:
+    """
+    Subscribe to the data plane flush batches.
+    """
+    return _data_backend.subscribe(pattern, callback)

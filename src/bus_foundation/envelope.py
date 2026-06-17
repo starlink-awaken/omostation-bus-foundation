@@ -1,88 +1,125 @@
-"""BusEnvelope — wire-format envelope for all bus events.
+"""Omni-Bus Unified Envelope implementation.
 
-Wire-format fields (all required unless noted):
-  id             : str  — unique event id ("evt_<epoch>_<6 hex>")
-  time           : str  — ISO 8601 UTC ("YYYY-MM-DDTHH:MM:SSZ")
-  type           : str  — event type, e.g. "pipeline:completed"
-  source         : str  — emitting component, e.g. "bus_foundation"
-  schema_version : int  — wire schema version (default 1; bump on breaking change)
-  trace_id       : str? — optional distributed trace correlation id
-  payload        : dict — event body (caller-defined, JSON-serializable)
+Implements the L0 Protocol (OmniEnvelope) unifying data, event, and control planes.
 """
 
 from __future__ import annotations
 
 import json
+import time
 import uuid
-from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any
 
 
-class EventType(StrEnum):
-    """Canonical event types. Custom types are allowed as plain strings."""
+class OmniPlane(StrEnum):
+    DATA = "DATA"
+    EVENT = "EVENT"
+    CONTROL = "CONTROL"
 
+class EventType(StrEnum):
+    """Canonical event types for backward compatibility."""
     PIPELINE_COMPLETED = "pipeline:completed"
     PIPELINE_STARTED = "pipeline:started"
     MESSAGE_RECEIVED = "message:received"
 
 
-class BusEnvelope:
+class OmniEnvelope:
     def __init__(
         self,
-        type: str | EventType,
-        source: str,
+        plane: str | OmniPlane | None = None,
+        topic: str | None = None,
+        source_uri: str | None = None,
         payload: dict[str, Any] | None = None,
         trace_id: str | None = None,
-        schema_version: int = 1,
         id: str | None = None,
-        time: str | None = None,
+        timestamp: float | None = None,
+        version: str = "1.0",
+        signature: Optional[str] = None,
+        seq_id: Optional[int] = None,
+        retry_count: int = 0,
+        # Legacy mapping fields for backward compatibility
+        type: str | None = None,
+        source: str | None = None,
+        backend: str | None = None,
+        schema_version: int | None = None,
     ):
-        if isinstance(type, EventType):
-            type = type.value
-        if not isinstance(type, str) or not type:
-            raise ValueError(f"BusEnvelope.type must be non-empty str, got {type!r}")
-        if not isinstance(source, str) or not source:
-            raise ValueError(f"BusEnvelope.source must be non-empty str, got {source!r}")
-        # 用 datetime.now() 拿 epoch, 避免 `time` 模块名与 self.time 字段冲突
-        epoch = int(datetime.now(UTC).timestamp())
-        self.id = id or f"evt_{epoch}_{uuid.uuid4().hex[:6]}"
-        self.time = time or datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
-        self.type = type
-        self.source = source
-        self.schema_version = schema_version
+        if plane is None:
+            plane = OmniPlane.EVENT.value
+        elif isinstance(plane, OmniPlane):
+            plane = plane.value
+            
+        topic = topic or type
+        if not topic:
+            raise ValueError(f"OmniEnvelope.topic (or type) must be non-empty str, got {topic!r}")
+            
+        source_uri = source_uri or source
+        if not source_uri:
+            raise ValueError(f"OmniEnvelope.source_uri (or source) must be non-empty str, got {source_uri!r}")
+
+        self.id = id or uuid.uuid4().hex
         self.trace_id = trace_id
+        self.timestamp = timestamp or time.time()
+        self.version = version if schema_version is None else str(schema_version)
+        self.schema_version = schema_version or 1
+        self.backend = backend
+        
+        self.plane = plane
+        # Fallback to type if topic not provided (legacy compat)
+        self.topic = topic
+        self.source_uri = source_uri
+        
         self.payload = payload or {}
+        self.signature = signature
+        self.seq_id = seq_id
+        self.retry_count = retry_count
+        
+        # Legacy compatibility wrappers
+        self.type = self.topic
+        self.source = self.source_uri
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
-            "time": self.time,
-            "type": self.type,
-            "source": self.source,
-            "schema_version": self.schema_version,
             "trace_id": self.trace_id,
+            "timestamp": self.timestamp,
+            "version": self.version,
+            "schema_version": self.schema_version,
+            "plane": self.plane,
+            "topic": self.topic,
+            "source_uri": self.source_uri,
             "payload": self.payload,
+            "signature": self.signature,
+            "seq_id": self.seq_id,
+            "retry_count": self.retry_count,
         }
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), sort_keys=True, ensure_ascii=False)
 
     @classmethod
-    def from_dict(cls, d: dict[str, Any]) -> BusEnvelope:
+    def from_dict(cls, d: dict[str, Any]) -> OmniEnvelope:
         return cls(
             id=d.get("id"),
-            time=d.get("time"),
-            type=d["type"],
-            source=d["source"],
-            schema_version=d.get("schema_version", 1),
             trace_id=d.get("trace_id"),
+            timestamp=d.get("timestamp"),
+            version=d.get("version", "1.0"),
+            schema_version=d.get("schema_version", 1),
+            plane=d.get("plane", OmniPlane.EVENT.value),
+            topic=d.get("topic") or d.get("type", ""),
+            source_uri=d.get("source_uri") or d.get("source", ""),
             payload=d.get("payload", {}),
+            signature=d.get("signature"),
+            seq_id=d.get("seq_id"),
+            retry_count=d.get("retry_count", 0),
         )
 
     @classmethod
-    def from_json(cls, s: str) -> BusEnvelope:
+    def from_json(cls, s: str) -> OmniEnvelope:
         return cls.from_dict(json.loads(s))
 
     def __repr__(self) -> str:
-        return f"BusEnvelope(id={self.id!r}, type={self.type!r}, source={self.source!r})"
+        return f"OmniEnvelope(id={self.id!r}, plane={self.plane!r}, topic={self.topic!r})"
+
+# Legacy Alias for backward compatibility
+BusEnvelope = OmniEnvelope
