@@ -1,7 +1,6 @@
 # AGENTS.md — bus-foundation developer guide
 
-> R77 update. Originally written R66. Updated after R73 (3 new backends),
-> R74 (LOW fixes + simplify), R75 (ruff), R76 (0.1.1 patch).
+> R78 update. Upgraded to Omni-Bus v2.
 
 ## Quickstart
 
@@ -10,27 +9,18 @@ uv sync
 uv run pytest -q  # 59 tests (R76)
 ```
 
-## Key files (R77 truth)
+## Key files (R78 truth)
 
 | File | LOC | Purpose |
 |------|-----|---------|
-| `src/bus_foundation/__init__.py` | ~120 | facade — publish/subscribe/schedule |
+| `src/bus_foundation/__init__.py` | ~120 | Legacy facade (publish/subscribe/schedule) |
 | `src/bus_foundation/facade/data.py` | ~20 | **R78** Omni-Bus Data Plane Facade |
 | `src/bus_foundation/facade/event.py` | ~20 | **R78** Omni-Bus Event Plane Facade |
 | `src/bus_foundation/facade/control.py` | ~40 | **R78** Omni-Bus Control Plane Facade |
-| `src/bus_foundation/envelope.py` | ~95 | BusEnvelope wire format (L0 OmniEnvelope SSOT) |
-| `src/bus_foundation/router.py` | ~55 | backend dispatch + DLQ fallback |
-| `src/bus_foundation/dlq.py` | ~135 | SQLite DLQ (WAL + GC) |
-| `src/bus_foundation/backends/base.py` | ~40 | BusBackend Protocol |
-| `src/bus_foundation/backends/pattern_match.py` | ~30 | **R74 shared helper** (6 backends delegate) |
-| `src/bus_foundation/backends/eventbus.py` | ~80 | in-process pubsub (no agora dep) |
-| `src/bus_foundation/backends/asyncio.py` | ~90 | asyncio.Queue pubsub |
-| `src/bus_foundation/backends/croniter.py` | ~125 | cron scheduling |
-| `src/bus_foundation/backends/messagebus.py` | ~50 | agent pub/sub (note: B007 in R77) |
-| `src/bus_foundation/backends/sse.py` | ~85 | in-process fan-out |
-| `src/bus_foundation/backends/ws.py` | ~120 | **R73** full-duplex fanout |
-| `src/bus_foundation/backends/realtime.py` | ~90 | **R73** versioned task events |
-| `src/bus_foundation/backends/persistent_bus.py` | ~180 | **R73** SQLite durable (note: R76 rate-limit) |
+| `src/bus_foundation/envelope.py` | ~100 | OmniEnvelope wire format (DATA, EVENT, CONTROL) |
+| `src/bus_foundation/dlq.py` | ~135 | SQLite DLQ (WAL + GC) for failed control tasks |
+| `src/bus_foundation/backends/data_plane.py` | ~80 | **R78** Async Ring Buffer with drop-tail logic |
+| `src/bus_foundation/backends/control_plane.py`| ~100 | **R78** SQLite WAL Task Store + ACK/NACK mechanics |
 
 ## Tests (R76 = 59 cases)
 
@@ -53,18 +43,16 @@ uv run pytest -q  # 59 tests (R76)
 | `test_router_retry_ownership.py` | (basic) | Router + DLQ fallback |
 | `test_cross_repo_smoke.py` | (R66) | Phase B GO gate |
 
-## Gotchas (R77)
+## Gotchas (R78)
 
-- **RETRY**: bus adapter 自身不重试 (透传), 详见 `RETRY-OWNERSHIP.md`
-- **DLQ**: 落 `~/.runtime/bus_dlq.db`, 50MB 滚动
+- **OMNI-BUS ARCHITECTURE**: All new development MUST align with the Omni-Bus plane semantics:
+    - `bus.data` for fast, non-blocking telemetry and logs.
+    - `bus.event` for domain fan-out.
+    - `bus.control` for durable execution requiring ACK/NACK.
+- **RETRY**: Control Plane handles retries automatically when tasks are `NACK`ed.
+- **DLQ**: Control Plane tasks failing repeatedly are sent to DLQ `~/.runtime/bus_dlq.db`.
 - **Zero agora dependency**: `grep -r "from agora" src/bus_foundation/` must return 0
-- **Pattern syntax**: `*` (all), `foo:*` (prefix), `foo:bar` (exact) — no regex
-- **Use `match_pattern` helper**: never re-implement `_match()` (R74 dedup)
 - **Use `collections.abc`**: `from collections.abc import Callable`, not `from typing`
-- **No premium backend in core**: persistent `EventBusBackend` (writes to
-  `agora-events.json`) lives in `agora.bus.backends`, NOT here
-- **R76 rate-limit**: `PersistentBusBackend.publish` runs cleanup every
-  100 publishes, not every one. Document if you change the constant.
 
 ## Adding a new backend
 
@@ -81,10 +69,9 @@ uv run pytest -q  # 59 tests (R76)
 
 ## Release
 
-- **Current version**: 0.1.1 (R76)
+- **Current version**: 0.2.0 (R78 - Omni-Bus)
 - **Public API frozen** since R66 (2026-06-12). No breaking changes
-  to BusEnvelope, the public functions (publish/subscribe/schedule),
-  or the BusBackend Protocol.
+  to BusEnvelope for legacy systems. All new Omni-Bus fields (plane, trace_id) have safe defaults.
 - **Bump version** in `pyproject.toml` for any release.
 - **Breaking changes** require an ADR (see `docs/ADR-0003-no-l0-promotion.md`
   for the L0 re-opening conditions, and `docs/ADR-0002-phase-c-trigger-reality-DRAFT.md`
