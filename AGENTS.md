@@ -15,7 +15,10 @@ uv run pytest -q  # 59 tests (R76)
 | File | LOC | Purpose |
 |------|-----|---------|
 | `src/bus_foundation/__init__.py` | ~120 | facade — publish/subscribe/schedule |
-| `src/bus_foundation/envelope.py` | ~95 | BusEnvelope wire format |
+| `src/bus_foundation/facade/data.py` | ~20 | **R78** Omni-Bus Data Plane Facade |
+| `src/bus_foundation/facade/event.py` | ~20 | **R78** Omni-Bus Event Plane Facade |
+| `src/bus_foundation/facade/control.py` | ~40 | **R78** Omni-Bus Control Plane Facade |
+| `src/bus_foundation/envelope.py` | ~95 | BusEnvelope wire format (L0 OmniEnvelope SSOT) |
 | `src/bus_foundation/router.py` | ~55 | backend dispatch + DLQ fallback |
 | `src/bus_foundation/dlq.py` | ~135 | SQLite DLQ (WAL + GC) |
 | `src/bus_foundation/backends/base.py` | ~40 | BusBackend Protocol |

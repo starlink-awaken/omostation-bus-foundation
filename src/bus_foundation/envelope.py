@@ -15,11 +15,11 @@ from __future__ import annotations
 import json
 import uuid
 from datetime import UTC, datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 
-class EventType(str, Enum):
+class EventType(StrEnum):
     """Canonical event types. Custom types are allowed as plain strings."""
 
     PIPELINE_COMPLETED = "pipeline:completed"

@@ -3,7 +3,8 @@
 > **Layer**: X 横切框架  
 > **Role**: 共享事件/传输总线 — pub/sub/schedule/DLQ  
 > **Stack**: Python 3.10+, uv, pydantic only runtime dep  
-> **Health**: 56-59 tests
+> **Health**: See local CI
+> **SSOT**: 运行时健康、测试规模以本项目 CI 和 workspace governance SSOT 为准
 >
 > 系统全景参见：[`docs/ARCHITECTURE-DIAGRAM.md`](../docs/ARCHITECTURE-DIAGRAM.md)
 
