@@ -35,8 +35,8 @@ class OmniEnvelope:
         id: str | None = None,
         timestamp: float | None = None,
         version: str = "1.0",
-        signature: Optional[str] = None,
-        seq_id: Optional[int] = None,
+        signature: str | None = None,
+        seq_id: int | None = None,
         retry_count: int = 0,
         # Legacy mapping fields for backward compatibility
         type: str | None = None,
