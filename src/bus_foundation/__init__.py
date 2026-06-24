@@ -23,6 +23,27 @@ from bus_foundation.dlq import DLQ
 from bus_foundation.envelope import BusEnvelope, EventType
 from bus_foundation.router import Router
 
+import sys
+from pathlib import Path
+
+class FallbackLogger:
+    """Hard-wired fallback logger to ensure dying signals are delivered."""
+    def __init__(self, fallback_file="~/.runtime/bus_fallback.log"):
+        self.fallback_file = Path(fallback_file).expanduser()
+        self.fallback_file.parent.mkdir(parents=True, exist_ok=True)
+        
+    def critical(self, message: str, envelope: BusEnvelope = None):
+        try:
+            with open(self.fallback_file, "a") as f:
+                f.write(f"[FALLBACK CRITICAL] {message}\\n")
+                if envelope:
+                    f.write(f"Envelope Dump: {envelope.to_json()}\\n")
+            print(f"[FALLBACK CRITICAL] {message}", file=sys.stderr)
+        except Exception as e:
+            print(f"FATAL: Fallback logger also failed: {e}", file=sys.stderr)
+
+_fallback = FallbackLogger()
+
 logger = logging.getLogger(__name__)
 
 # Multi-backend registry — extend here when adding new backends.
@@ -59,12 +80,15 @@ def publish(envelope: BusEnvelope) -> str:
     try:
         return backend.publish(envelope)
     except Exception as e:
-        _default_dlq.enqueue(
-            event_id=envelope.id,
-            backend=backend_name,
-            envelope_json=envelope.to_json(),
-            error=str(e),
-        )
+        try:
+            _default_dlq.enqueue(
+                event_id=envelope.id,
+                backend=backend_name,
+                envelope_json=envelope.to_json(),
+                error=str(e),
+            )
+        except Exception as dlq_err:
+            _fallback.critical(f"DLQ enqueue failed during publish error handling: {dlq_err}", envelope)
         return envelope.id
 
 

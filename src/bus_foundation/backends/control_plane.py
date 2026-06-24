@@ -1,6 +1,6 @@
 """ControlPlaneBackend — Durable, reliable task execution with ACK and DLQ.
 
-Uses SQLite WAL for strong consistency. 
+Uses SQLite WAL for strong consistency.
 Designed for tasks, cron jobs, and webhooks that require exactly-once or at-least-once semantics.
 """
 
@@ -114,6 +114,21 @@ class ControlPlaneBackend:
 
             if status == "DLQ":
                 logger.error("Task %s moved to DLQ after %d retries. Last error: %s", task_id, retry_count, error)
+                # Emit DLQ fatal event to event plane
+                try:
+                    from bus_foundation.facade.event import publish as publish_event
+                    publish_event(
+                        topic="system.fatal.dlq",
+                        payload={
+                            "task_id": task_id,
+                            "error": error,
+                            "retry_count": retry_count,
+                            "backend": "control_plane"
+                        },
+                        source_uri="bos://capability/bus/control_plane"
+                    )
+                except Exception as ex:
+                    logger.critical("Failed to emit system.fatal.dlq event: %s", ex)
 
     def close(self) -> None:
         with self._lock:
