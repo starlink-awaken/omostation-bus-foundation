@@ -48,11 +48,11 @@ class OmniEnvelope:
             plane = OmniPlane.EVENT.value
         elif isinstance(plane, OmniPlane):
             plane = plane.value
-            
+
         topic = topic or type
         if not topic:
             raise ValueError(f"OmniEnvelope.topic (or type) must be non-empty str, got {topic!r}")
-            
+
         source_uri = source_uri or source
         if not source_uri:
             raise ValueError(f"OmniEnvelope.source_uri (or source) must be non-empty str, got {source_uri!r}")
@@ -63,17 +63,17 @@ class OmniEnvelope:
         self.version = version if schema_version is None else str(schema_version)
         self.schema_version = schema_version or 1
         self.backend = backend
-        
+
         self.plane = plane
         # Fallback to type if topic not provided (legacy compat)
         self.topic = topic
         self.source_uri = source_uri
-        
+
         self.payload = payload or {}
         self.signature = signature
         self.seq_id = seq_id
         self.retry_count = retry_count
-        
+
         # Legacy compatibility wrappers
         self.type = self.topic
         self.source = self.source_uri
