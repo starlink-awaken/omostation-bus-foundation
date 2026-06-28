@@ -54,7 +54,7 @@ class RealtimeBackend:
         for cb in subs:
             try:
                 cb(envelope, version)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001  # defensive fallback
                 logger.error("realtime_callback_error task_id=%s err=%s", task_id, e)
         return envelope.id
 

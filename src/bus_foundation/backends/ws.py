@@ -102,7 +102,7 @@ class WebSocketBackend:
                 env = await queue.get()
                 try:
                     callback(env)
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001  # defensive fallback
                     logger.error("ws_callback_error client_id=%s err=%s", client_id, e)
         except asyncio.CancelledError:
             # R73 fix: graceful exit on unsubscribe

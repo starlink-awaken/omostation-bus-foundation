@@ -112,7 +112,7 @@ class PersistentBusBackend:
     def is_available(self) -> bool:
         try:
             return self.db_path.parent.exists()
-        except Exception:
+        except Exception:  # noqa: BLE001  # defensive fallback
             return False
 
     def publish(self, envelope: BusEnvelope) -> str:
@@ -132,7 +132,7 @@ class PersistentBusBackend:
             if self._match(pattern, envelope.type):
                 try:
                     callback(envelope)
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001  # defensive fallback
                     logger.error("persistent_callback_error sub_id=%s err=%s", sub_id, e)
         return envelope.id
 

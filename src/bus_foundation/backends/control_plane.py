@@ -55,7 +55,7 @@ class ControlPlaneBackend:
     def is_available(self) -> bool:
         try:
             return self.db_path.parent.exists()
-        except Exception:
+        except Exception:  # noqa: BLE001  # defensive fallback
             return False
 
     def publish(self, envelope: OmniEnvelope) -> str:
@@ -127,7 +127,7 @@ class ControlPlaneBackend:
                         },
                         source_uri="bos://capability/bus/control_plane"
                     )
-                except Exception as ex:
+                except Exception as ex:  # noqa: BLE001  # defensive fallback
                     logger.critical("Failed to emit system.fatal.dlq event: %s", ex)
 
     def close(self) -> None:

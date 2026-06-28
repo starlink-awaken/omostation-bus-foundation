@@ -76,7 +76,7 @@ class DataPlaneBackend:
             try:
                 # Consumers of data plane should accept a list of envelopes
                 callback(batch)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001  # defensive fallback
                 logger.error("DataPlane subscriber %s failed during batch flush: %s", sub_id, e)
 
     def close(self):

@@ -39,7 +39,7 @@ class FallbackLogger:
                 if envelope:
                     f.write(f"Envelope Dump: {envelope.to_json()}\\n")
             print(f"[FALLBACK CRITICAL] {message}", file=sys.stderr)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001  # defensive fallback
             print(f"FATAL: Fallback logger also failed: {e}", file=sys.stderr)
 
 _fallback = FallbackLogger()
@@ -79,7 +79,7 @@ def publish(envelope: BusEnvelope) -> str:
         return envelope.id
     try:
         return backend.publish(envelope)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001  # defensive fallback
         try:
             _default_dlq.enqueue(
                 event_id=envelope.id,
@@ -87,7 +87,7 @@ def publish(envelope: BusEnvelope) -> str:
                 envelope_json=envelope.to_json(),
                 error=str(e),
             )
-        except Exception as dlq_err:
+        except Exception as dlq_err:  # noqa: BLE001
             _fallback.critical(f"DLQ enqueue failed during publish error handling: {dlq_err}", envelope)
         return envelope.id
 

@@ -43,7 +43,7 @@ class SSEBackend:
             if self._match(pattern, envelope.type):
                 try:
                     callback(envelope)
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001  # defensive fallback
                     logger.error("sse_callback_error sub_id=%s err=%s", sub_id, e)
         return envelope.id
 
