@@ -6,42 +6,42 @@
 
 ```bash
 uv sync
-uv run pytest -q  # 59 tests (R76)
+uv run pytest -q  # 以实际为准
 ```
 
 ## Key files (R78 truth)
 
-| File | LOC | Purpose |
-|------|-----|---------|
-| `src/bus_foundation/__init__.py` | ~120 | Legacy facade (publish/subscribe/schedule) |
-| `src/bus_foundation/facade/data.py` | ~20 | **R78** Omni-Bus Data Plane Facade |
-| `src/bus_foundation/facade/event.py` | ~20 | **R78** Omni-Bus Event Plane Facade |
-| `src/bus_foundation/facade/control.py` | ~40 | **R78** Omni-Bus Control Plane Facade |
-| `src/bus_foundation/envelope.py` | ~100 | OmniEnvelope wire format (DATA, EVENT, CONTROL) |
-| `src/bus_foundation/dlq.py` | ~135 | SQLite DLQ (WAL + GC) for failed control tasks |
-| `src/bus_foundation/backends/data_plane.py` | ~80 | **R78** Async Ring Buffer with drop-tail logic |
-| `src/bus_foundation/backends/control_plane.py`| ~100 | **R78** SQLite WAL Task Store + ACK/NACK mechanics |
+| File | Purpose |
+|------|---------|
+| `src/bus_foundation/__init__.py` | Legacy facade (publish/subscribe/schedule) |
+| `src/bus_foundation/facade/data.py` | **R78** Omni-Bus Data Plane Facade |
+| `src/bus_foundation/facade/event.py` | **R78** Omni-Bus Event Plane Facade |
+| `src/bus_foundation/facade/control.py` | **R78** Omni-Bus Control Plane Facade |
+| `src/bus_foundation/envelope.py` | OmniEnvelope wire format (DATA, EVENT, CONTROL) |
+| `src/bus_foundation/dlq.py` | SQLite DLQ (WAL + GC) for failed control tasks |
+| `src/bus_foundation/backends/data_plane.py` | **R78** Async Ring Buffer with drop-tail logic |
+| `src/bus_foundation/backends/control_plane.py`| **R78** SQLite WAL Task Store + ACK/NACK mechanics |
 
-## Tests (R76 = 59 cases)
+## Tests (以实际为准)
 
-| File | Tests | Coverage |
-|------|-------|----------|
-| `test_envelope.py` | 3 | BusEnvelope construction + validation |
-| `test_dlq.py` | 5 | DLQ persistence + GC + rate-limit |
-| `test_eventbus_backend.py` | 4 | in-process pubsub |
-| `test_asyncio_backend.py` | 4 | asyncio.Queue pubsub |
-| `test_croniter_backend.py` | (basic) | cron scheduling |
-| `test_messagebus_backend.py` | (basic) | agent pub/sub |
-| `test_sse_backend.py` | (basic) | in-process fan-out |
-| `test_ws_backend.py` | 4 | R73 full-duplex fanout |
-| `test_realtime_backend.py` | 4 | R73 versioned task events |
-| `test_persistent_bus_backend.py` | 5 | R73 SQLite durable pubsub |
-| `test_persistent_bus_ratelimit.py` | 3 | **R76** rate-limit cleanup |
-| `test_pattern_match.py` | 4 | **R74** shared helper |
-| `test_realtime_unsubscribe.py` | 3 | **R73** unsubscribe fix |
-| `test_facade.py` | (basic) | publish/subscribe/schedule facade |
-| `test_router_retry_ownership.py` | (basic) | Router + DLQ fallback |
-| `test_cross_repo_smoke.py` | (R66) | Phase B GO gate |
+| File | Coverage |
+|------|----------|
+| `test_envelope.py` | BusEnvelope construction + validation |
+| `test_dlq.py` | DLQ persistence + GC + rate-limit |
+| `test_eventbus_backend.py` | in-process pubsub |
+| `test_asyncio_backend.py` | asyncio.Queue pubsub |
+| `test_croniter_backend.py` | cron scheduling |
+| `test_messagebus_backend.py` | agent pub/sub |
+| `test_sse_backend.py` | in-process fan-out |
+| `test_ws_backend.py` | R73 full-duplex fanout |
+| `test_realtime_backend.py` | R73 versioned task events |
+| `test_persistent_bus_backend.py` | R73 SQLite durable pubsub |
+| `test_persistent_bus_ratelimit.py` | **R76** rate-limit cleanup |
+| `test_pattern_match.py` | **R74** shared helper |
+| `test_realtime_unsubscribe.py` | **R73** unsubscribe fix |
+| `test_facade.py` | publish/subscribe/schedule facade |
+| `test_router_retry_ownership.py` | Router + DLQ fallback |
+| `test_cross_repo_smoke.py` | Phase B GO gate |
 
 ## Gotchas (R78)
 

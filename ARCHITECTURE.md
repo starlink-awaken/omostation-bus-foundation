@@ -2,7 +2,7 @@
 
 > **Layer**: X 横切框架  
 > **Role**: 共享事件/传输总线 — pub/sub/schedule/DLQ  
-> **Stack**: Python 3.10+, uv, pydantic only runtime dep  
+> **Stack**: Python 3.13+, uv, pydantic only runtime dep  
 > **Health**: See local CI
 > **SSOT**: 运行时健康、测试规模以本项目 CI 和 workspace governance SSOT 为准
 >
@@ -42,7 +42,7 @@ graph TB
 | `src/bus_foundation/envelope.py` | BusEnvelope wire format |
 | `src/bus_foundation/router.py` | Backend dispatch + DLQ fallback |
 | `src/bus_foundation/dlq.py` | SQLite dead-letter queue |
-| `src/bus_foundation/backends/` | 8 backends: eventbus/asyncio/croniter/sse/ws/... |
+| `src/bus_foundation/backends/` | 10 backends: eventbus/asyncio/croniter/messagebus/sse/ws/realtime/persistent_bus/data_plane/control_plane |
 
 ## 4. 测试
 

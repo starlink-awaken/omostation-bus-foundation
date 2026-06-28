@@ -35,13 +35,13 @@ bus-foundation 是 eCOS 跨项目共用的事件总线基础库。它的关键�
 | `src/bus_foundation/backends/ws.py` | **R73 新增** full-duplex | - |
 | `src/bus_foundation/backends/realtime.py` | **R73 新增** versioned task events | - |
 | `src/bus_foundation/backends/persistent_bus.py` | **R73 新增** SQLite durable | - |
-| `tests/` | 56 tests, 100% pass (R75) | - |
+| `tests/` | 以实际为准 (R75) | - |
 
 ## 快速命令
 
 ```bash
 uv sync                                    # 安装 dev 依赖
-uv run pytest -q                           # 56 tests (R75)
+uv run pytest -q                           # 以实际为准 (R75)
 uv run ruff check src tests                # 0 errors (R75 后)
 uv run ruff format --check src tests       # format check
 bash scripts/check-bus-hard-conditions.sh   # 5 hard conditions monitor
@@ -73,7 +73,7 @@ from agora.bus import publish, BusEnvelope  # agora-only
 ## 5 硬条件 (ADR-0008, frozen 6 个月)
 
 bus-foundation 接收 7 仓内采用 (omo, metaos, runtime, aetherforge, kairon-pipeline,
-llm-gateway, hermes-console) 作为 Condition 4 (eCOS-external usage) 的代理。
+llm-gateway, cockpit-ui) 作为 Condition 4 (eCOS-external usage) 的代理。
 详细条件见 `/Users/xiamingxing/Workspace/projects/agora/docs/ADR-0008-bus-foundation-strategy.md`。
 
 ## Phase A-C 状态 (R57-R72, closed)
@@ -97,7 +97,7 @@ llm-gateway, hermes-console) 作为 Condition 4 (eCOS-external usage) 的代理�
 
 - 0.1.x patch: R75-UP035-batch (re-verify 0 warnings)
 - 0.1.x patch: Performance LOW fixes (R74 simplify 留的 2 项)
-- 0.2.0: NOT planned (frozen public API)
+- 0.2.0: Released (R78 - Omni-Bus v2, see AGENTS.md)
 - Phase D: NOT planned (per R72 decision)
 
 详见 `CHANGELOG.md` §"Backlog"。

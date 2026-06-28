@@ -15,7 +15,9 @@ import them from `agora.bus.backends` directly.
 from __future__ import annotations
 
 import logging
+import sys
 from collections.abc import Callable
+from pathlib import Path
 
 from bus_foundation.backends.croniter import CroniterBackend
 from bus_foundation.backends.eventbus import EventBusBackend
@@ -23,15 +25,13 @@ from bus_foundation.dlq import DLQ
 from bus_foundation.envelope import BusEnvelope, EventType
 from bus_foundation.router import Router
 
-import sys
-from pathlib import Path
 
 class FallbackLogger:
     """Hard-wired fallback logger to ensure dying signals are delivered."""
     def __init__(self, fallback_file="~/.runtime/bus_fallback.log"):
         self.fallback_file = Path(fallback_file).expanduser()
         self.fallback_file.parent.mkdir(parents=True, exist_ok=True)
-        
+
     def critical(self, message: str, envelope: BusEnvelope = None):
         try:
             with open(self.fallback_file, "a") as f:

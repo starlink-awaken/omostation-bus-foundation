@@ -32,14 +32,14 @@ def subscribe(topic_pattern: str, version_range: str = ">=1.0"):
 
 def outbox_emit(db_session: Any, topic: str, payload: dict[str, Any], source_uri: str = "bos://capability/bus/event", trace_id: str = "") -> None:
     """
-    Transactional Outbox Pattern. 
+    Transactional Outbox Pattern.
     Writes the event directly into the provided database session instead of publishing immediately.
     A separate background worker should poll the outbox table and call `publish()`.
     """
+    import json
     import time
     import uuid
-    import json
-    
+
     envelope_data = {
         "id": uuid.uuid4().hex,
         "plane": OmniPlane.EVENT.value,
@@ -50,7 +50,7 @@ def outbox_emit(db_session: Any, topic: str, payload: dict[str, Any], source_uri
         "timestamp": time.time(),
         "version": "1.0",
     }
-    
+
     # Assuming db_session is an SQLAlchemy session
     # We execute a raw SQL insert to an outbox table
     # This ensures the event is committed exactly when the business logic is committed

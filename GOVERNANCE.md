@@ -1,13 +1,13 @@
 # bus-foundation Governance
 
 > Release cadence, decision protocol, and how bus-foundation fits into the
-> omostation 5+3+1 architecture.
+> omostation 5+4+1+1 architecture.
 
 ## Relationship to omostation
 
 bus-foundation is a **leaf package** — it has zero agora dependency and zero
 intra-eCOS dependencies. It exists to give all omostation projects
-(omo, metaos, runtime, aetherforge, kairon, llm-gateway, hermes-console,
+(omo, metaos, runtime, aetherforge, kairon, llm-gateway, cockpit-ui,
 cockpit, gbrain, ecos) a common event-bus vocabulary without taking on a
 dependency on agora's I0 service mesh.
 
