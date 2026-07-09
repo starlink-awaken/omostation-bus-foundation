@@ -27,6 +27,13 @@ dev = [
     "pytest-asyncio>=0.23",
     "ruff>=0.5",
 ]
+# Real-WebSocket transport support. The default in-process fanout
+# (asyncio.Queue per client) keeps working without these. Install
+# `bus-foundation[ws]` only when you want a real `ws://` server bound
+# to a port and browser / JS clients connecting.
+ws = [
+    "websockets>=13.0",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/bus_foundation"]
