@@ -27,6 +27,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from bus_foundation.backends.pattern_match import match_pattern
+from bus_foundation.backends.sqlite_base import SqliteBase
 from bus_foundation.envelope import OmniEnvelope
 
 logger = logging.getLogger(__name__)
@@ -36,7 +37,7 @@ DEFAULT_MAX_RETRIES = 3
 DEFAULT_POLL_INTERVAL = 0.5
 
 
-class ControlPlaneBackend:
+class ControlPlaneBackend(SqliteBase):
     """SQLite-backed Control Plane with ACK, NACK, and DLQ support."""
 
     name = "control_plane"
@@ -47,12 +48,10 @@ class ControlPlaneBackend:
         max_retries: int = DEFAULT_MAX_RETRIES,
         poll_interval: float = DEFAULT_POLL_INTERVAL,
     ) -> None:
-        self.db_path = Path(db_path or DEFAULT_DB_PATH)
-        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        db_path = Path(db_path or DEFAULT_DB_PATH)
+        SqliteBase.__init__(self, db_path)
         self._max_retries = max_retries
         self._poll_interval = poll_interval
-        self._lock = threading.Lock()
-        self._conn = self._open_conn()
         self._init_schema()
         # R79: per-subscriber poller threads.
         self._subscribers: dict[str, tuple[str, Callable]] = {}
@@ -62,13 +61,6 @@ class ControlPlaneBackend:
         # so the same task isn't dispatched twice if it stays PENDING
         # across polls.
         self._dispatched: dict[str, set[str]] = {}
-
-    def _open_conn(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(str(self.db_path), check_same_thread=False)
-        conn.execute("PRAGMA journal_mode=WAL")
-        conn.execute("PRAGMA busy_timeout=5000")
-        conn.row_factory = sqlite3.Row
-        return conn
 
     def _init_schema(self) -> None:
         with self._lock:

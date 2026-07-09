@@ -24,11 +24,11 @@ import threading
 import time
 import uuid
 from collections.abc import Callable
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from bus_foundation.backends.pattern_match import match_pattern
+from bus_foundation.backends.sqlite_base import SqliteBase
 from bus_foundation.envelope import BusEnvelope
 
 logger = logging.getLogger(__name__)
@@ -40,7 +40,7 @@ SUBSCRIBER_TTL_SECONDS = 24 * 3600
 CLEANUP_EVERY_N_PUBLISHES = 100
 
 
-class PersistentBusBackend:
+class PersistentBusBackend(SqliteBase):
     """SQLite-backed durable pub/sub.
 
     One SQLite DB, WAL mode. Subscribers are in-process callbacks
@@ -51,10 +51,8 @@ class PersistentBusBackend:
     name = "persistent"
 
     def __init__(self, db_path: Path | str | None = None, poll_interval: float = 0.5) -> None:
-        self.db_path = Path(db_path or DEFAULT_DB_PATH)
-        self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        self._lock = threading.Lock()
-        self._conn = self._open_conn()
+        db_path = Path(db_path or DEFAULT_DB_PATH)
+        SqliteBase.__init__(self, db_path)
         self._init_schema()
         self._subscribers: dict[str, tuple[str, float, Callable]] = {}
         # R79: per-subscriber tail threads for cross-process delivery.
@@ -73,13 +71,6 @@ class PersistentBusBackend:
         # counts.
         self._publish_count = 0
         self._gc()
-
-    def _open_conn(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(str(self.db_path), check_same_thread=False)
-        conn.execute("PRAGMA journal_mode=WAL")
-        conn.execute("PRAGMA busy_timeout=5000")
-        conn.row_factory = sqlite3.Row
-        return conn
 
     def _init_schema(self) -> None:
         with self._lock:
@@ -116,9 +107,6 @@ class PersistentBusBackend:
                 )
                 self._conn.commit()
                 logger.info("persistent_gc trimmed=%d", excess)
-
-    def _now(self) -> str:
-        return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     def is_available(self) -> bool:
         try:
@@ -334,6 +322,4 @@ class PersistentBusBackend:
                 ).fetchall()
         return [dict(r) for r in rows]
 
-    def close(self) -> None:
-        with self._lock:
-            self._conn.close()
+
