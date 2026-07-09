@@ -23,13 +23,19 @@ class TestRealtimeBackend:
         assert b.get_version("task-1") == 2
 
     def test_subscriber_receives_version(self):
+        """R79: BusBackend Protocol mandates single-arg callback.
+
+        The monotonic version is stamped onto envelope.retry_count so
+        single-arg subscribers can read it without breaking the
+        Protocol contract.
+        """
         b = RealtimeBackend()
-        received: list[tuple[BusEnvelope, int]] = []
-        b.subscribe("task-2", lambda env, v: received.append((env, v)))
+        received: list[BusEnvelope] = []
+        b.subscribe("task-2", lambda env: received.append(env))
         b.publish(BusEnvelope(type=EventType.PIPELINE_COMPLETED, source="t", payload={"x": 1}))
         b.publish(BusEnvelope(type="task-2", source="t", payload={"x": 2}))
         # Subscriber matches on task_id (envelope.type); first publish used a
         # different type, so only the second matches.
         assert len(received) == 1
-        assert received[0][1] == 1
-        assert received[0][0].payload == {"x": 2}
+        assert received[0].retry_count == 1
+        assert received[0].payload == {"x": 2}

@@ -50,13 +50,24 @@ class PersistentBusBackend:
 
     name = "persistent"
 
-    def __init__(self, db_path: Path | str | None = None) -> None:
+    def __init__(self, db_path: Path | str | None = None, poll_interval: float = 0.5) -> None:
         self.db_path = Path(db_path or DEFAULT_DB_PATH)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._lock = threading.Lock()
         self._conn = self._open_conn()
         self._init_schema()
         self._subscribers: dict[str, tuple[str, float, Callable]] = {}
+        # R79: per-subscriber tail threads for cross-process delivery.
+        self._tail_stops: dict[str, threading.Event] = {}
+        self._tail_threads: dict[str, threading.Thread] = {}
+        # R79: per-subscriber watermark = the highest time value seen,
+        # so a polling subscriber only sees new events.
+        self._watermarks: dict[str, str] = {}
+        # R79: per-subscriber dedup of delivered envelope ids. Used to
+        # ensure in-process publish() and the tail thread don't both
+        # deliver the same envelope.
+        self._delivered_ids: dict[str, set[str]] = {}
+        self._poll_interval = poll_interval
         # R75-LOW-1: rate-limit counter (cleanup runs every Nth publish,
         # not every publish). Avoids O(N) per publish for high-subscriber
         # counts.
@@ -127,22 +138,164 @@ class PersistentBusBackend:
             self._publish_count += 1
             if self._publish_count % CLEANUP_EVERY_N_PUBLISHES == 0:
                 self._cleanup_subs_locked()
-        # In-process fanout (outside the lock, callbacks may be slow)
+        # R79: the in-process tail thread will also pick this up via
+        # the SQLite poll (this is what makes cross-process delivery
+        # work). We dedup by envelope id so each callback fires at
+        # most once per subscriber across both paths.
         for sub_id, (pattern, _last_seen, callback) in self._subscribers.items():
-            if self._match(pattern, envelope.type):
-                try:
-                    callback(envelope)
-                except Exception as e:  # noqa: BLE001  # defensive fallback
-                    logger.error("persistent_callback_error sub_id=%s err=%s", sub_id, e)
+            if not self._match(pattern, envelope.type):
+                continue
+            with self._lock:
+                if envelope.id in self._delivered_ids.get(sub_id, set()):
+                    continue
+            try:
+                callback(envelope)
+            except Exception as e:  # noqa: BLE001
+                logger.error("persistent_callback_error sub_id=%s err=%s", sub_id, e)
+            with self._lock:
+                self._delivered_ids.setdefault(sub_id, set()).add(envelope.id)
         return envelope.id
 
     def subscribe(self, pattern: str, callback: Callable) -> str:
+        """Subscribe + start a per-subscriber tail thread.
+
+        R79: the previous implementation only fan-outed to in-process
+        subscribers, contradicting the docstring claim of "cross-process
+        delivery via the SQLite file itself, polled by other processes".
+        We now spawn a daemon tail thread that polls the SQLite log for
+        new events matching the pattern and dispatches them. This
+        delivers events across processes that share the same db_path.
+        """
         sub_id = f"persistent-{uuid.uuid4().hex[:8]}"
-        self._subscribers[sub_id] = (pattern, time.monotonic(), callback)
+        with self._lock:
+            self._subscribers[sub_id] = (pattern, time.monotonic(), callback)
+        # Start the per-subscriber tail thread that polls for new events
+        # from other processes. Each subscriber has its own thread so
+        # unsubscribe cleanly stops the loop.
+        stop_event = threading.Event()
+        # R79: catch-up window — when a subscriber joins, replay events
+        # written in the last 5 seconds so cross-process subscribers
+        # don't miss events written just before they subscribed.
+        catchup_window = 5.0
+        with self._lock:
+            self._tail_stops[sub_id] = stop_event
+            self._tail_threads[sub_id] = threading.Thread(
+                target=self._tail_loop,
+                args=(sub_id, pattern, callback, stop_event, catchup_window),
+                daemon=True,
+                name=f"bus-tail-{sub_id}",
+            )
+            self._tail_threads[sub_id].start()
         return sub_id
 
     def unsubscribe(self, sub_id: str) -> bool:
-        return self._subscribers.pop(sub_id, None) is not None
+        """Stop the tail thread (if any) and remove the subscriber."""
+        with self._lock:
+            present = sub_id in self._subscribers
+            if present:
+                del self._subscribers[sub_id]
+            stop = self._tail_stops.pop(sub_id, None)
+            self._tail_threads.pop(sub_id, None)
+            self._watermarks.pop(sub_id, None)
+        if stop is not None:
+            stop.set()
+        return present
+
+    def _tail_loop(
+        self,
+        sub_id: str,
+        pattern: str,
+        callback: Callable,
+        stop_event: threading.Event,
+        catchup_window: float,
+    ) -> None:
+        """R79: per-subscriber tail thread.
+
+        Polls the persistent_events table for new rows (time >
+        watermark) matching the pattern, dispatches them, and advances
+        the watermark. The watermark is initialized to
+        (now - catchup_window) so events written in the catch-up window
+        BEFORE this subscriber joined are also delivered. Exits when
+        stop_event is set.
+        """
+        # R79: initialize watermark to now - catchup_window. This relies
+        # on a time-orderable string format (ISO 8601 UTC with Z
+        # suffix); we slice the first 19 chars (YYYY-MM-DDTHH:MM:SS) and
+        # subtract seconds.
+        from datetime import UTC, datetime, timedelta
+        init_watermark = (datetime.now(UTC) - timedelta(seconds=catchup_window)).strftime(
+            "%Y-%m-%dT%H:%M:%SZ"
+        )
+        with self._lock:
+            self._watermarks[sub_id] = init_watermark
+        try:
+            while not stop_event.is_set():
+                with self._lock:
+                    watermark = self._watermarks.get(sub_id, "")
+                # Use a separate short-lived connection for the poll so
+                # we don't fight the main writer for the lock. SQLite WAL
+                # allows concurrent readers.
+                try:
+                    poll_conn = sqlite3.connect(
+                        str(self.db_path), timeout=1.0, check_same_thread=False
+                    )
+                    poll_conn.execute("PRAGMA journal_mode=WAL")
+                    poll_conn.row_factory = sqlite3.Row
+                    try:
+                        rows = poll_conn.execute(
+                            """
+                            SELECT id, event_type, source, time, envelope_json
+                            FROM persistent_events
+                            WHERE time > ?
+                            ORDER BY time ASC
+                            LIMIT 100
+                            """,
+                            (watermark,),
+                        ).fetchall()
+                    finally:
+                        poll_conn.close()
+                except sqlite3.OperationalError:
+                    # DB locked by writer; back off and retry.
+                    stop_event.wait(self._poll_interval)
+                    continue
+                if rows:
+                    new_watermark = watermark
+                    for row in rows:
+                        if not self._match(pattern, row["event_type"]):
+                            continue
+                        with self._lock:
+                            if row["id"] in self._delivered_ids.get(sub_id, set()):
+                                # Already delivered in-process; skip.
+                                if row["time"] > new_watermark:
+                                    new_watermark = row["time"]
+                                continue
+                        try:
+                            env = BusEnvelope.from_json(row["envelope_json"])
+                        except Exception as e:  # noqa: BLE001
+                            logger.error(
+                                "persistent_tail_decode_error sub_id=%s err=%s",
+                                sub_id,
+                                e,
+                            )
+                            continue
+                        try:
+                            callback(env)
+                        except Exception as e:  # noqa: BLE001
+                            logger.error(
+                                "persistent_tail_callback_error sub_id=%s err=%s",
+                                sub_id,
+                                e,
+                            )
+                        with self._lock:
+                            self._delivered_ids.setdefault(sub_id, set()).add(row["id"])
+                        if row["time"] > new_watermark:
+                            new_watermark = row["time"]
+                    if new_watermark != watermark:
+                        with self._lock:
+                            self._watermarks[sub_id] = new_watermark
+                stop_event.wait(self._poll_interval)
+        except Exception as e:  # noqa: BLE001
+            logger.error("persistent_tail_crashed sub_id=%s err=%s", sub_id, e)
 
     def _cleanup_subs(self) -> None:
         """Public wrapper: acquires the lock."""
