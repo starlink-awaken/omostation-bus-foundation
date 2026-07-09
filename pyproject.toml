@@ -25,6 +25,7 @@ dependencies = [
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
+    "pytest-benchmark>=5.0",
     "ruff>=0.5",
 ]
 # Real-WebSocket transport support. The default in-process fanout
