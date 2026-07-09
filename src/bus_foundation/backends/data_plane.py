@@ -32,11 +32,16 @@ class DataPlaneBackend:
 
         self._buffer = collections.deque(maxlen=capacity)
         self._lock = threading.Lock()
-        # R80: per-subscriber (pattern, callback) so flush() can filter
-        # the batch by pattern. Previously the pattern was ignored.
+        # R80: per-subscriber (pattern, callback) so flush() can filter.
         self._subscribers: dict[str, tuple[str, Callable[[list[OmniEnvelope]], None]]] = {}
 
-        self._last_flush = time.time()
+        # R84: telemetry counters (thread-safe, best-effort).
+        self._publish_count = 0
+        self._drop_count = 0
+        self._flush_count = 0
+        self._last_publish_time = 0.0
+        self._last_flush_time = time.time()
+
         self._flush_thread = threading.Thread(target=self._flush_loop, daemon=True)
         self._flush_thread.start()
 
@@ -44,10 +49,45 @@ class DataPlaneBackend:
         return True
 
     def publish(self, envelope: OmniEnvelope) -> str:
-        """Push an envelope into the ring buffer. Fire and forget."""
+        """Push an envelope into the ring buffer. Fire and forget.
+
+        R84: tracks drop count when the ring buffer is full.
+        """
+        now = time.time()
         with self._lock:
+            self._publish_count += 1
+            self._last_publish_time = now
+            if len(self._buffer) == self.capacity:
+                self._drop_count += 1
             self._buffer.append(envelope)
         return envelope.id
+
+    def metrics(self) -> dict:
+        """Return operational telemetry for this DataPlane instance.
+
+        Fields:
+          publish_count   — total envelopes published (monotonic)
+          drop_count      — envelopes dropped due to ring buffer full
+          drop_rate_pct   — percentage of publishes that were dropped
+          flush_count     — total flush cycles completed
+          drain_lag_ms    — milliseconds since the last flush
+          buffer_usage    — current ring buffer fill ratio 0.0-1.0
+        """
+        with self._lock:
+            buffer_usage = len(self._buffer) / self.capacity if self.capacity else 0.0
+            flush_count = self._flush_count
+            drop_count = self._drop_count
+            publish_count = self._publish_count
+        drain_lag_ms = (time.time() - self._last_flush_time) * 1000
+        drop_rate_pct = (drop_count / publish_count * 100) if publish_count else 0.0
+        return {
+            "publish_count": publish_count,
+            "drop_count": drop_count,
+            "drop_rate_pct": round(drop_rate_pct, 4),
+            "flush_count": flush_count,
+            "drain_lag_ms": round(drain_lag_ms, 2),
+            "buffer_usage": round(buffer_usage, 4),
+        }
 
     def subscribe(self, pattern: str, callback: Callable) -> str:
         """Subscribe to a pattern; only matching envelopes are flushed.
@@ -79,11 +119,11 @@ class DataPlaneBackend:
         with self._lock:
             if not self._buffer:
                 return
-            # Take a snapshot; clear so producers can keep appending
-            # while we dispatch. The deque is the source of truth.
+            # Take a snapshot; clear so producers can keep appending.
             batch = list(self._buffer)
             self._buffer.clear()
-            # Snapshot subscribers under the lock.
+            self._flush_count += 1
+            self._last_flush_time = time.time()
             subscribers = list(self._subscribers.items())
 
         # Dispatch per-subscriber with pattern-filtered batch.
