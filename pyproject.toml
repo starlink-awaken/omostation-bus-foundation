@@ -37,6 +37,15 @@ dev = [
 ws = [
     "websockets>=13.0",
 ]
+# R93: Redis pub/sub for cross-process distributed bus.
+redis = [
+    "redis>=5.0",
+]
+# R94: OpenTelemetry tracing (optional, pure-stdlib fallback).
+otel = [
+    "opentelemetry-api>=1.20",
+    "opentelemetry-sdk>=1.20",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/bus_foundation"]

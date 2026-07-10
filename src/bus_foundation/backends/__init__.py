@@ -17,6 +17,7 @@ from bus_foundation.backends.base import BusBackend
 from bus_foundation.backends.croniter import CroniterBackend
 from bus_foundation.backends.eventbus import EventBusBackend
 from bus_foundation.backends.messagebus import MessageBusBackend
+from bus_foundation.backends.redis import RedisBackend
 from bus_foundation.backends.sse import SSEBackend
 
 __all__ = [
@@ -25,5 +26,6 @@ __all__ = [
     "CroniterBackend",
     "EventBusBackend",
     "MessageBusBackend",
+    "RedisBackend",
     "SSEBackend",
 ]
