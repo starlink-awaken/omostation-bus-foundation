@@ -4,7 +4,7 @@ Public API:
     publish(envelope)  — publish an event
     subscribe(pattern, fn)  — register a subscriber
     schedule(expr, fn)  — schedule a recurring task
-    enable_metrics(port=8745, server=True)  — R89: enable /metrics endpoint
+    enable_metrics(port=N, server=True)  — R89: enable /metrics endpoint
     metrics.snapshot()  — R89: read all counters/gauges/histograms
 
 Architecture: facade → router → backend (9 in 0.2.0) → DLQ on failure.
@@ -50,7 +50,9 @@ def enable_metrics(
     """R89: enable metric collection and (optionally) HTTP /metrics server.
 
     Args:
-        port: TCP port for /metrics (default: BUS_METRICS_PORT env or 8745).
+        port: TCP port for /metrics. Falls back to BUS_METRICS_PORT env var.
+            If neither is set, raises ValueError (the port is a workspace SSOT,
+            not a default; see protocols/port-registry.yaml → 8745).
         host: Bind address.
         server: If True, also start a daemon HTTP server exposing /metrics.
     """
@@ -59,7 +61,14 @@ def enable_metrics(
     if not server:
         return
     if port is None:
-        port = int(os.environ.get("BUS_METRICS_PORT", "8745"))
+        env_port = os.environ.get("BUS_METRICS_PORT")
+        if not env_port:
+            raise ValueError(
+                "bus-foundation /metrics port not configured. "
+                "Pass `port=` to enable_metrics() or set the BUS_METRICS_PORT "
+                "env var. See protocols/port-registry.yaml (bus-foundation-metrics)."
+            )
+        port = int(env_port)
     if _metrics_server is None:
         from bus_foundation.metrics_server import MetricsHTTPServer
         _metrics_server = MetricsHTTPServer(host=host, port=port)
