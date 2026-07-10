@@ -174,6 +174,12 @@ class DLQ:
         envelope_json: str,
         error: str,
     ) -> None:
+        # R91: apply redaction before persisting
+        from .dlq_redaction import Redactor, load_user_config
+        redactor = getattr(self, "_redactor", None) or Redactor(load_user_config())
+        self._redactor = redactor  # cache
+        redacted_json = redactor.redact_json(envelope_json, backend=backend)
+
         now = self._now()
         with self._lock:
             self._conn.execute(
@@ -182,7 +188,7 @@ class DLQ:
                     (event_id, backend, envelope_json, error, retries, status, created_at, updated_at)
                 VALUES (?, ?, ?, ?, 0, 'PENDING', ?, ?)
                 """,
-                (event_id, backend, envelope_json, error, now, now),
+                (event_id, backend, redacted_json, error, now, now),
             )
             self._conn.commit()
 
