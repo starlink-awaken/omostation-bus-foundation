@@ -4,8 +4,11 @@ Public API:
     publish(envelope)  — publish an event
     subscribe(pattern, fn)  — register a subscriber
     schedule(expr, fn)  — schedule a recurring task
+    enable_metrics(port=8745, server=True)  — R89: enable /metrics endpoint
+    metrics.snapshot()  — R89: read all counters/gauges/histograms
 
-Architecture: facade → router → backend (5 in 0.1.0) → DLQ on failure.
+Architecture: facade → router → backend (9 in 0.2.0) → DLQ on failure.
+R89 adds optional middleware: metrics (always on if enabled).
 
 The bus-foundation package is agora-independent. Consumers that want
 agora's premium backends (persistent EventBus, global sse_manager) can
@@ -15,6 +18,7 @@ import them from `agora.bus.backends` directly.
 from __future__ import annotations
 
 import logging
+import os
 import sys
 from collections.abc import Callable
 from pathlib import Path
@@ -24,6 +28,51 @@ from bus_foundation.backends.eventbus import EventBusBackend
 from bus_foundation.dlq import DLQ
 from bus_foundation.envelope import BusEnvelope, EventType
 from bus_foundation.router import Router
+
+
+# R89: metrics surface (default OFF, zero overhead)
+from bus_foundation.metrics import snapshot as metrics_snapshot
+from bus_foundation.metrics import Registry as _MetricsRegistry
+from bus_foundation.metrics_instrumentation import (  # noqa: F401  (side-effect: registers metrics)
+    record_backend_health,
+    record_dlq_depth,
+    record_subscribe,
+)
+
+_metrics_server = None
+
+
+def enable_metrics(
+    port: int | None = None,
+    host: str = "0.0.0.0",
+    server: bool = True,
+) -> None:
+    """R89: enable metric collection and (optionally) HTTP /metrics server.
+
+    Args:
+        port: TCP port for /metrics (default: BUS_METRICS_PORT env or 8745).
+        host: Bind address.
+        server: If True, also start a daemon HTTP server exposing /metrics.
+    """
+    global _metrics_server
+    _MetricsRegistry.enable()
+    if not server:
+        return
+    if port is None:
+        port = int(os.environ.get("BUS_METRICS_PORT", "8745"))
+    if _metrics_server is None:
+        from bus_foundation.metrics_server import MetricsHTTPServer
+        _metrics_server = MetricsHTTPServer(host=host, port=port)
+        _metrics_server.start()
+
+
+def disable_metrics() -> None:
+    """R89: stop collecting metrics + shutdown /metrics server (if any)."""
+    global _metrics_server
+    _MetricsRegistry.disable()
+    if _metrics_server is not None:
+        _metrics_server.stop()
+        _metrics_server = None
 
 
 class FallbackLogger:
@@ -60,36 +109,64 @@ _router = Router(backend=_default_backend, dlq=_default_dlq)
 # Start croniter scheduler thread (no-op if not used)
 _croniter.start()
 
-__all__ = ["BusEnvelope", "EventType", "publish", "subscribe", "schedule"]
+__all__ = [
+    "BusEnvelope", "EventType",
+    "publish", "subscribe", "schedule",
+    "enable_metrics", "disable_metrics",
+    "metrics_snapshot",
+]
 
 
 def publish(envelope: BusEnvelope) -> str:
     """Publish via the appropriate backend (envelope.backend, default eventbus)."""
     backend_name = getattr(envelope, "backend", None) or "eventbus"
-    backend = _backends.get(backend_name)
-    if backend is None:
-        return _router.publish(envelope)
-    if not backend.is_available():
-        _default_dlq.enqueue(
-            event_id=envelope.id,
-            backend=backend_name,
-            envelope_json=envelope.to_json(),
-            error="backend unavailable",
-        )
-        return envelope.id
-    try:
-        return backend.publish(envelope)
-    except Exception as e:  # noqa: BLE001  # defensive fallback
+    # R89: instrument publish latency + status (zero-overhead when metrics disabled)
+    from bus_foundation.metrics_instrumentation import instrument_publish, record_dlq_depth
+    with instrument_publish(backend_name) as ctx:
         try:
-            _default_dlq.enqueue(
-                event_id=envelope.id,
-                backend=backend_name,
-                envelope_json=envelope.to_json(),
-                error=str(e),
-            )
-        except Exception as dlq_err:  # noqa: BLE001
-            _fallback.critical(f"DLQ enqueue failed during publish error handling: {dlq_err}", envelope)
-        return envelope.id
+            backend = _backends.get(backend_name)
+            if backend is None:
+                event_id = _router.publish(envelope)
+                ctx["status"] = "success"
+                return event_id
+            if not backend.is_available():
+                _default_dlq.enqueue(
+                    event_id=envelope.id,
+                    backend=backend_name,
+                    envelope_json=envelope.to_json(),
+                    error="backend unavailable",
+                )
+                ctx["status"] = "dlq"
+                record_dlq_depth(backend_name, "PENDING", _dlq_count(_default_dlq, "PENDING"))
+                return envelope.id
+            try:
+                event_id = backend.publish(envelope)
+                ctx["status"] = "success"
+                return event_id
+            except Exception as e:  # noqa: BLE001  # defensive fallback
+                try:
+                    _default_dlq.enqueue(
+                        event_id=envelope.id,
+                        backend=backend_name,
+                        envelope_json=envelope.to_json(),
+                        error=str(e),
+                    )
+                except Exception as dlq_err:  # noqa: BLE001
+                    _fallback.critical(f"DLQ enqueue failed during publish error handling: {dlq_err}", envelope)
+                ctx["status"] = "dlq"
+                record_dlq_depth(backend_name, "PENDING", _dlq_count(_default_dlq, "PENDING"))
+                return envelope.id
+        except Exception:  # noqa: BLE001  # last-resort: never let metrics break publish
+            ctx["status"] = "fail"
+            return envelope.id
+
+
+def _dlq_count(dlq: DLQ, status: str) -> int:
+    """Helper: count DLQ entries with given status. Cheap O(N) scan; OK for now."""
+    try:
+        return sum(1 for e in dlq.list_all() if e.get("status") == status)
+    except Exception:  # noqa: BLE001
+        return 0
 
 
 def subscribe(pattern: str) -> Callable:
