@@ -112,8 +112,8 @@ class TestCroniterBackend:
         b.add_cron_job("j", "every 1m", cb)
         # Force the job to be due "now" by mutating next_run to past.
         with b._lock:
-            interval, _, cb_obj = b._jobs["j"]
-            b._jobs["j"] = (interval, time.monotonic() - 1.0, cb_obj)
+            next_run, cb_obj, interval, _ = b._jobs["j"]
+            b._jobs["j"] = (time.monotonic() - 1.0, cb_obj, interval, None)
         b.start()
         try:
             # Wait for the loop to fire once.
