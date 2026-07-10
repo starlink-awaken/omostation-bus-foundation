@@ -27,6 +27,7 @@ dev = [
     "pytest-asyncio>=0.23",
     "pytest-benchmark>=5.0",
     "ruff>=0.5",
+    "hypothesis>=6.0",  # R97: property-based testing
 ]
 # Real-WebSocket transport support. The default in-process fanout
 # (asyncio.Queue per client) keeps working without these. Install
