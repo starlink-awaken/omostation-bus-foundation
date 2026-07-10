@@ -109,6 +109,29 @@ def retry_stats() -> dict:
     return RetryRegistry.all()
 
 
+# R92: schema registry surface
+from bus_foundation.schema import (  # noqa: E402
+    CompatibilityMode,
+    SchemaError,
+    SchemaRegistry,
+    register as _register_schema,
+    validate as _validate_schema,
+)
+
+
+def validate_envelope(envelope: BusEnvelope, target_version: str = "v2") -> None:
+    """R92: validate an envelope is compatible with target schema version.
+
+    Raises SchemaError if incompatible. Default target is v2.
+
+    Background: the `schema_version` field on the envelope has been
+    declared but unused since R82. R92 makes it a first-class concept
+    so consumers can declare what version they expect and reject
+    incompatible envelopes early.
+    """
+    _validate_schema(envelope, target_version)
+
+
 class FallbackLogger:
     """Hard-wired fallback logger to ensure dying signals are delivered."""
     def __init__(self, fallback_file="~/.runtime/bus_fallback.log"):
@@ -150,6 +173,7 @@ __all__ = [
     "metrics_snapshot",
     "set_retry_policy", "retry_stats",
     "RetryPolicy", "CircuitBreaker", "CircuitState", "CircuitOpenError",
+    "validate_envelope",
 ]
 
 
