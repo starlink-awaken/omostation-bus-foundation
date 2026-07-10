@@ -18,6 +18,7 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
+    "hypothesis>=6.156.4",
     "pydantic>=2.13.4",
 ]
 

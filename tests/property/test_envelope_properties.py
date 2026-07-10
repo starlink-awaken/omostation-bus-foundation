@@ -7,10 +7,17 @@ import string
 import time
 from typing import Any
 
-from hypothesis import HealthCheck, given, settings, strategies as st
-from hypothesis.strategies import composite
-
 import pytest
+
+try:
+    from hypothesis import HealthCheck, given, settings, strategies as st
+    from hypothesis.strategies import composite
+    _HYPOTHESIS_AVAILABLE = True
+except ImportError:
+    _HYPOTHESIS_AVAILABLE = False
+
+if not _HYPOTHESIS_AVAILABLE:
+    pytest.skip("hypothesis not installed", allow_module_level=True)
 
 from bus_foundation.envelope import BusEnvelope, EventType
 from bus_foundation.backends.pattern_match import match_pattern
