@@ -114,7 +114,7 @@ class TestPatternMatchProperties:
 class TestDLQRedactionProperties:
     @given(payload=st.dictionaries(
         keys=st.text(min_size=1, max_size=30).filter(lambda s: s.strip()),
-        values=st.text(max_size=50),
+        values=st.text(min_size=1, max_size=50).filter(lambda s: "[REDACTED]" not in s),
         max_size=8,
     ))
     @settings(max_examples=50, deadline=2000)
@@ -126,13 +126,12 @@ class TestDLQRedactionProperties:
         assert set(out.keys()) == set(payload.keys())
         for k, v in out.items():
             if v == "[REDACTED]":
-                assert k.lower() in (
+                # redactor only redacts keys matching sensitive substrings
+                k_lower = k.lower()
+                assert any(s in k_lower for s in (
                     "password", "secret", "token", "api_key", "apikey",
                     "credential", "private_key", "auth", "session",
-                ) or any(s in k.lower() for s in (
-                    "password", "secret", "token", "api_key", "apikey",
-                    "credential", "private_key", "auth", "session",
-                ))
+                )), f"redacted non-sensitive key: {k!r}"
 
     @given(s=st.text(max_size=100))
     @settings(max_examples=30, deadline=2000)

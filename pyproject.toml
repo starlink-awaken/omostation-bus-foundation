@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "bus-foundation"
-version = "0.2.0"
-description = "Unified bus interface for the eCOS stack (split from agora/bus in Phase B, R66). 0.1.1 = R76 backlog fixes (rate-limit cleanup, ADR-0003)."
+version = "0.3.0"
+description = "Unified bus interface for the eCOS stack (split from agora/bus in Phase B, R66). 0.3.0 = R89-R97 modernization: metrics + retry + DLQ admin + property tests + schema registry + OTel + 5-segment cron."
 readme = "README.md"
 requires-python = ">=3.13"
 license = { text = "MIT" }
