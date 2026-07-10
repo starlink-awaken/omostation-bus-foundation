@@ -75,6 +75,40 @@ def disable_metrics() -> None:
         _metrics_server = None
 
 
+# R90: retry + circuit breaker surface
+from bus_foundation.retry import (  # noqa: E402
+    CircuitBreaker,
+    CircuitOpenError,
+    CircuitState,
+    RetryPolicy,
+    RetryRegistry,
+    with_retry,
+)
+
+
+def set_retry_policy(backend: str, policy: RetryPolicy) -> None:
+    """R90: enable retry on a backend. Default is disabled.
+
+    Per RETRY-OWNERSHIP.md, backend adapters do NOT retry. This opt-in
+    application-layer retry wraps the backend's publish() call.
+
+    Suggested defaults for new backends:
+        bus_foundation.set_retry_policy(
+            "my_backend",
+            RetryPolicy(max_attempts=3, initial_backoff=0.1, max_backoff=5.0),
+        )
+
+    For fire-and-forget (data_plane) or scheduled (croniter) semantics,
+    do NOT call this — those backends will skip retry automatically.
+    """
+    RetryRegistry.set_policy(backend, policy)
+
+
+def retry_stats() -> dict:
+    """R90: snapshot all per-backend retry policies + circuit breaker state."""
+    return RetryRegistry.all()
+
+
 class FallbackLogger:
     """Hard-wired fallback logger to ensure dying signals are delivered."""
     def __init__(self, fallback_file="~/.runtime/bus_fallback.log"):
@@ -114,6 +148,8 @@ __all__ = [
     "publish", "subscribe", "schedule",
     "enable_metrics", "disable_metrics",
     "metrics_snapshot",
+    "set_retry_policy", "retry_stats",
+    "RetryPolicy", "CircuitBreaker", "CircuitState", "CircuitOpenError",
 ]
 
 
@@ -140,9 +176,21 @@ def publish(envelope: BusEnvelope) -> str:
                 record_dlq_depth(backend_name, "PENDING", _dlq_count(_default_dlq, "PENDING"))
                 return envelope.id
             try:
-                event_id = backend.publish(envelope)
+                # R90: opt-in retry + circuit breaker (no-op if no policy set)
+                event_id = with_retry(backend_name, lambda: backend.publish(envelope))
                 ctx["status"] = "success"
                 return event_id
+            except CircuitOpenError:
+                # Circuit open: skip to DLQ
+                _default_dlq.enqueue(
+                    event_id=envelope.id,
+                    backend=backend_name,
+                    envelope_json=envelope.to_json(),
+                    error="circuit open",
+                )
+                ctx["status"] = "dlq"
+                record_dlq_depth(backend_name, "PENDING", _dlq_count(_default_dlq, "PENDING"))
+                return envelope.id
             except Exception as e:  # noqa: BLE001  # defensive fallback
                 try:
                     _default_dlq.enqueue(
