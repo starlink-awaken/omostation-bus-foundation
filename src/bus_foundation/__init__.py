@@ -174,12 +174,16 @@ __all__ = [
     "set_retry_policy", "retry_stats",
     "RetryPolicy", "CircuitBreaker", "CircuitState", "CircuitOpenError",
     "validate_envelope",
+    "trace", "get_current_trace_id",
 ]
 
 
 def publish(envelope: BusEnvelope) -> str:
     """Publish via the appropriate backend (envelope.backend, default eventbus)."""
     backend_name = getattr(envelope, "backend", None) or "eventbus"
+    # R94: attach current trace_id to envelope before publish
+    from bus_foundation.observability import attach_to_envelope
+    attach_to_envelope(envelope)
     # R89: instrument publish latency + status (zero-overhead when metrics disabled)
     from bus_foundation.metrics_instrumentation import instrument_publish, record_dlq_depth
     with instrument_publish(backend_name) as ctx:
