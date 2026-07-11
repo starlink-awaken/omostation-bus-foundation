@@ -1,5 +1,7 @@
 """bus_foundation — unified bus interface (Phase B, R66 split from agora/bus).
 
+Version: 0.3.0 (R89-R97 modernization) + R93-R95 extensions.
+
 Public API:
     publish(envelope)  — publish an event
     subscribe(pattern, fn)  — register a subscriber
@@ -7,12 +9,7 @@ Public API:
     enable_metrics(port=N, server=True)  — R89: enable /metrics endpoint
     metrics.snapshot()  — R89: read all counters/gauges/histograms
 
-Architecture: facade → router → backend (9 in 0.2.0) → DLQ on failure.
-R89 adds optional middleware: metrics (always on if enabled).
-
-The bus-foundation package is agora-independent. Consumers that want
-agora's premium backends (persistent EventBus, global sse_manager) can
-import them from `agora.bus.backends` directly.
+Architecture: facade → router → backend (9 + Redis + WS v2) → DLQ on failure.
 """
 
 from __future__ import annotations
@@ -23,22 +20,27 @@ import sys
 from collections.abc import Callable
 from pathlib import Path
 
+__version__ = "0.3.0"
+
+import sys
+from collections.abc import Callable
+from pathlib import Path
+
 from bus_foundation.backends.base import BusBackend
 from bus_foundation.backends.croniter import CroniterBackend
 from bus_foundation.backends.eventbus import EventBusBackend
 from bus_foundation.dlq import DLQ
 from bus_foundation.envelope import BusEnvelope, EventType
-from bus_foundation.router import Router
-
+from bus_foundation.metrics import Registry as _MetricsRegistry
 
 # R89: metrics surface (default OFF, zero overhead)
 from bus_foundation.metrics import snapshot as metrics_snapshot
-from bus_foundation.metrics import Registry as _MetricsRegistry
 from bus_foundation.metrics_instrumentation import (  # noqa: F401  (side-effect: registers metrics)
     record_backend_health,
     record_dlq_depth,
     record_subscribe,
 )
+from bus_foundation.router import Router
 
 _metrics_server = None
 
@@ -72,6 +74,7 @@ def enable_metrics(
         port = int(env_port)
     if _metrics_server is None:
         from bus_foundation.metrics_server import MetricsHTTPServer
+
         _metrics_server = MetricsHTTPServer(host=host, port=port)
         _metrics_server.start()
 
@@ -124,7 +127,11 @@ from bus_foundation.schema import (  # noqa: E402
     CompatibilityMode,
     SchemaError,
     SchemaRegistry,
+)
+from bus_foundation.schema import (
     register as _register_schema,
+)
+from bus_foundation.schema import (
     validate as _validate_schema,
 )
 
@@ -144,6 +151,7 @@ def validate_envelope(envelope: BusEnvelope, target_version: str = "v2") -> None
 
 class FallbackLogger:
     """Hard-wired fallback logger to ensure dying signals are delivered."""
+
     def __init__(self, fallback_file="~/.runtime/bus_fallback.log"):
         self.fallback_file = Path(fallback_file).expanduser()
         self.fallback_file.parent.mkdir(parents=True, exist_ok=True)
@@ -157,6 +165,7 @@ class FallbackLogger:
             print(f"[FALLBACK CRITICAL] {message}", file=sys.stderr)
         except Exception as e:  # noqa: BLE001  # defensive fallback
             print(f"FATAL: Fallback logger also failed: {e}", file=sys.stderr)
+
 
 _fallback = FallbackLogger()
 
@@ -177,14 +186,24 @@ _router = Router(backend=_default_backend, dlq=_default_dlq)
 _croniter.start()
 
 __all__ = [
-    "BusEnvelope", "EventType",
-    "publish", "subscribe", "schedule",
-    "enable_metrics", "disable_metrics",
+    "__version__",
+    "BusEnvelope",
+    "EventType",
+    "publish",
+    "subscribe",
+    "schedule",
+    "enable_metrics",
+    "disable_metrics",
     "metrics_snapshot",
-    "set_retry_policy", "retry_stats",
-    "RetryPolicy", "CircuitBreaker", "CircuitState", "CircuitOpenError",
+    "set_retry_policy",
+    "retry_stats",
+    "RetryPolicy",
+    "CircuitBreaker",
+    "CircuitState",
+    "CircuitOpenError",
     "validate_envelope",
-    "trace", "get_current_trace_id",
+    "trace",
+    "get_current_trace_id",
 ]
 
 
@@ -193,9 +212,11 @@ def publish(envelope: BusEnvelope) -> str:
     backend_name = getattr(envelope, "backend", None) or "eventbus"
     # R94: attach current trace_id to envelope before publish
     from bus_foundation.observability import attach_to_envelope
+
     attach_to_envelope(envelope)
     # R89: instrument publish latency + status (zero-overhead when metrics disabled)
-    from bus_foundation.metrics_instrumentation import instrument_publish, record_dlq_depth
+    from bus_foundation.metrics_instrumentation import instrument_publish
+
     with instrument_publish(backend_name) as ctx:
         try:
             backend = _backends.get(backend_name)
