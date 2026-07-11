@@ -1,0 +1,15 @@
+{
+  "dashboard": {
+    "title": "bus-foundation metrics",
+    "panels": [
+      {"title": "Publish Throughput", "type": "graph", "target": "bus_publish_total"},
+      {"title": "Publish Latency (P50)", "type": "graph", "target": "bus_publish_latency_seconds"},
+      {"title": "Active Subscriptions", "type": "gauge", "target": "bus_subscribe_active"},
+      {"title": "DLQ Depth", "type": "gauge", "target": "bus_dlq_depth"},
+      {"title": "Backend Health", "type": "stat", "target": "bus_backend_healthy"},
+      {"title": "Circuit Breaker State", "type": "stat", "target": "bus_circuit_breaker_state"},
+      {"title": "Retry Attempts", "type": "graph", "target": "bus_retry_attempted_total"},
+      {"title": "DLQ Redacted", "type": "graph", "target": "bus_dlq_redacted_total"}
+    ]
+  }
+}

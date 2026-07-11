@@ -23,6 +23,7 @@ import sys
 from collections.abc import Callable
 from pathlib import Path
 
+from bus_foundation.backends.base import BusBackend
 from bus_foundation.backends.croniter import CroniterBackend
 from bus_foundation.backends.eventbus import EventBusBackend
 from bus_foundation.dlq import DLQ
@@ -162,7 +163,7 @@ _fallback = FallbackLogger()
 logger = logging.getLogger(__name__)
 
 # Multi-backend registry — extend here when adding new backends.
-_backends: dict[str, object] = {
+_backends: dict[str, BusBackend] = {
     "eventbus": EventBusBackend(),
     "croniter": CroniterBackend(),
 }
