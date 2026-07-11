@@ -121,8 +121,8 @@ class TestDLQAdmin:
         try:
             n = admin.purge(backend="eventbus")
             assert n == 2
-            # Without --yes, no actual delete
-            assert len(admin.list()) == 2
+            # Actually deleted (R91.3 real implementation)
+            assert len(admin.list()) == 0
         finally:
             admin.close()
 

@@ -92,14 +92,19 @@ class DLQAdmin:
         }
 
     def ack(self, event_ids: list[str]) -> int:
-        """Mark entries as ACKed. Returns number of removed entries.
+        """Remove entries from DLQ after external handling.
 
-        Note: existing DLQ schema has no ACK state, so we just close
-        the connection without removing. For now this is a stub that
-        returns the count. R91.3 will wire to actual delete.
+        Returns number of deleted entries.
         """
-        all_entries = {_row_to_entry(r).event_id: _row_to_entry(r) for r in self.dlq.list_all()}
-        return sum(1 for eid in event_ids if eid in all_entries)
+        count = 0
+        for eid in event_ids:
+            try:
+                self.dlq._conn.execute("DELETE FROM dlq WHERE event_id = ?", (eid,))
+                count += 1
+            except Exception:  # noqa: BLE001
+                pass
+        self.dlq._conn.commit()
+        return count
 
     def retry(self, event_ids: list[str], router: Any) -> int:
         """Republish envelopes via the router. Returns number of retries.
@@ -107,21 +112,23 @@ class DLQAdmin:
         The caller supplies a router-like object (anything with a publish()
         method) to keep this module decoupled from the Router class.
         """
-        all_entries = {_row_to_entry(r).event_id: _row_to_entry(r) for r in self.dlq.list_all()}
+        rows = self.dlq._conn.execute(
+            "SELECT event_id, envelope_json FROM dlq WHERE event_id IN ({})".format(
+                ",".join("?" * len(event_ids))
+            ), event_ids
+        ).fetchall()
         count = 0
-        for eid in event_ids:
-            entry = all_entries.get(eid)
-            if entry is None:
-                continue
+        for row in rows:
+            eid, env_json = row["event_id"], row["envelope_json"]
             try:
-                env = json.loads(entry.envelope_json)
-            except (ValueError, TypeError):
-                continue
-            try:
-                router.publish(env)
+                import json
+                env_dict = json.loads(env_json)
+                router.publish(env_dict)
+                self.dlq._conn.execute("DELETE FROM dlq WHERE event_id = ?", (eid,))
                 count += 1
             except Exception:  # noqa: BLE001
                 pass
+        self.dlq._conn.commit()
         return count
 
     def purge(
@@ -129,18 +136,19 @@ class DLQAdmin:
         backend: str | None = None,
         before: str | None = None,
     ) -> int:
-        """Delete entries matching filter. Returns count of deleted.
-
-        Stub: returns count of matches without actually deleting.
-        R91.3 will wire to actual DELETE SQL.
-        """
-        all_entries = [_row_to_entry(r) for r in self.dlq.list_all()]
-        to_delete = all_entries
+        """Delete entries matching filter. Returns count of deleted."""
+        conditions: list[str] = []
+        params: list[object] = []
         if backend:
-            to_delete = [e for e in to_delete if e.backend == backend]
+            conditions.append("backend = ?")
+            params.append(backend)
         if before:
-            to_delete = [e for e in to_delete if e.created_at < before]
-        return len(to_delete)
+            conditions.append("created_at < ?")
+            params.append(before)
+        where = " AND ".join(conditions) if conditions else "1=1"
+        deleted = self.dlq._conn.execute("DELETE FROM dlq WHERE {}".format(where), params).rowcount  # noqa: UP036
+        self.dlq._conn.commit()
+        return deleted
 
     def close(self) -> None:
         self.dlq.close()
