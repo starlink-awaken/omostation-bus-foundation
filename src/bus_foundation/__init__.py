@@ -22,9 +22,6 @@ from pathlib import Path
 
 __version__ = "0.3.0"
 
-import sys
-from collections.abc import Callable
-from pathlib import Path
 
 from bus_foundation.backends.base import BusBackend
 from bus_foundation.backends.croniter import CroniterBackend
