@@ -12,7 +12,7 @@ import logging
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-from .metrics import Registry, snapshot
+from .metrics import Registry
 
 logger = logging.getLogger(__name__)
 
@@ -43,9 +43,7 @@ class _MetricsHandler(BaseHTTPRequestHandler):
                         labels_str = "{" + kv + "}"
                     if isinstance(val, dict) and "buckets" in val:
                         for b, c in val["buckets"].items():
-                            lines.append(
-                                f'{name}_bucket{{le="{b}",{labels_str[1:-1] if labels_str else ""}}} {c}'
-                            )
+                            lines.append(f'{name}_bucket{{le="{b}",{labels_str[1:-1] if labels_str else ""}}} {c}')
                         lines.append(f"{name}_sum{labels_str} {val['sum']}")
                         lines.append(f"{name}_count{labels_str} {val['count']}")
                     else:

@@ -85,3 +85,63 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 - R73 code review: `.omo/_delivery/r73-code-review.md`
 - R74 evidence: `.omo/_delivery/r74-monthly-evidence-2026-06-13.md`
 - Path C decision: `.omo/_delivery/r71-phase-c-recommendation-memo.md`
+
+## [0.2.0] — 2026-07-09 (R79-R88: durability, control plane, DLQ, WS transport)
+
+### Added
+- `PersistentBusBackend` — SQLite-WAL-backed durable pub/sub with FIFO GC
+- `ControlPlaneBackend` — SQLite-backed task execution with ACK/NACK/DLQ
+- `DLQ` — Dead Letter Queue with SQLite storage and redaction
+- `WebSocketBackend` (v1) — Real WebSocket transport via `websockets` library
+- `DataPlaneBackend` — Ring-buffer-backed high-throughput data plane
+- `SqliteBase` — Shared SQLite infrastructure (WAL, locking, GC)
+- Router with per-backend DLQ routing
+- 5 new backend adapters (ws, sse, realtime, persistent, control)
+- R75 rate-limit cleanup mechanism
+
+### Changed
+- BusEnvelope migrated to Pydantic BaseModel (R82)
+- Facade layer restructured into data/event/control planes
+- Backend protocol formalized via `BusBackend` Protocol class
+- Pattern matching deduplicated into shared `pattern_match.py`
+
+### Fixed
+- R79: subscribe() now works on ControlPlaneBackend (was stubbed)
+- R75-LOW-1: rate-limit cleanup O(N) → O(N/100) per publish
+
+## [0.3.0] — 2026-07-12 (R89-R97: metrics, retry, schema, OTel, Redis)
+
+### Added
+- `MetricsRegistry` — Pure-stdlib Counter/Histogram/Gauge (R89)
+- `MetricsHTTPServer` — Pure-stdlib HTTP `/metrics` endpoint (R89)
+- `RetryPolicy` + `CircuitBreaker` — Application-layer retry (R90)
+- `DLQAdmin` — DLQ management CLI (`bus-dlq list|stats|purge|ack|retry`)
+- `Redactor` + `RedactionConfig` — PII/credential redaction in DLQ (R91)
+- `SchemaRegistry` — Envelope version compatibility (R92, 3 modes)
+- `RedisBackend` — Distributed pub/sub via Redis (R93)
+- `WebSocketBackendV2` — Protocol versioning, compression, heartbeat (R95)
+- `observability` — Pure-stdlib W3C trace context with optional OTel upgrade (R94)
+- 5-segment cron parser with timezone support (R96)
+- Property-based tests (hypothesis) and chaos tests (R97)
+- 14 performance benchmarks (µs → ms range)
+- `docs/PERFORMANCE-SLA.md` — Official throughput/latency targets
+- `docs/grafana-dashboard.json` — 8-panel metrics dashboard
+
+### Changed
+- Project version: 172 tests → 300+ tests
+- Coverage: 65% → 83% (with targeted test expansions)
+- All `zip()` calls use `strict=True` (R97 safety)
+- `CompatibilityMode` uses `enum.StrEnum` (PEP 663)
+- `Registry.register()` preserves concrete type via TypeVar
+- FallbackLogger.critical uses `Optional` type annotation (PEP 484)
+- Code quality: ruff 42 errors → 0, ruff format compliant
+
+### Fixed
+- ws_v2.py: missing `Any`/`threading`/`importlib` imports (3 runtime crashes)
+- ws_v2.py: `PerMessageDeflate` → `ServerPerMessageDeflateFactory` (websockets 16 API)
+- ws_v2.py: `stop_server` loop.stop → sentinel future cancel (RuntimeError)
+- ws_v2.py: `_drain` CancelledError re-raise removed (RuntimeWarning)
+- `__init__.py`: missing `trace`/`get_current_trace_id` imports
+- `redis.py`: unused variable `redis` removed
+- `observability.py`: unused `Status`/`StatusCode` imports removed
+- `with_retry`: PEP 695 generic function syntax

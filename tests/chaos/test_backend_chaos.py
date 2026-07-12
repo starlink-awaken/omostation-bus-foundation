@@ -8,22 +8,19 @@ trinity works under adverse conditions.
 from __future__ import annotations
 
 import random
-import time
-from typing import Any
 
 import pytest
 
 import bus_foundation
 from bus_foundation.envelope import BusEnvelope, EventType
+from bus_foundation.metrics import Registry as MetricsRegistry
 from bus_foundation.retry import (
-    CircuitBreaker,
     CircuitOpenError,
     CircuitState,
     RetryPolicy,
     RetryRegistry,
     with_retry,
 )
-from bus_foundation.metrics import Registry as MetricsRegistry
 
 
 @pytest.fixture(autouse=True)
@@ -45,17 +42,19 @@ class TestChaosScenarios:
             RetryPolicy(max_attempts=5, initial_backoff=0.01, jitter=0),
         )
         call_count = 0
+
         def flaky_publish(env: BusEnvelope) -> str:
             nonlocal call_count
             call_count += 1
             if random.random() < 0.5:
                 raise ConnectionError(f"chaos failure {call_count}")
             return env.id
+
         # Run 100 times with 50% failure rate — should always preserve id eventually
         for _ in range(100):
             env = BusEnvelope(topic="chaos:test", payload={"x": 1}, event_type=EventType.PIPELINE_COMPLETED)
             try:
-                result = with_retry("chaos_backend", lambda: flaky_publish(env))
+                result = with_retry("chaos_backend", lambda e=env: flaky_publish(e))
                 assert result == env.id
             except (ConnectionError, CircuitOpenError):
                 pass  # acceptable: full circuit exhaustion
@@ -88,11 +87,13 @@ class TestChaosScenarios:
             RetryPolicy(max_attempts=4, initial_backoff=0.01, max_backoff=0.1, jitter=0),
         )
         fail_remaining = [5]  # first 5 calls fail, then succeed
+
         def call():
             if fail_remaining[0] > 0:
                 fail_remaining[0] -= 1
                 raise ConnectionError("transient")
             return "ok"
+
         # First call: should retry 5 times, fail
         with pytest.raises(ConnectionError):
             with_retry("flaky", call)

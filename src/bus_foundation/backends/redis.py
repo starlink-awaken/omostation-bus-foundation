@@ -14,7 +14,6 @@ Requires the `redis` extra (`redis>=5.0`). Default off — no hard dependency.
 
 from __future__ import annotations
 
-import json
 import logging
 import threading
 import uuid
@@ -57,7 +56,8 @@ class RedisBackend:
 
     def _lazy_import(self) -> Any:
         if self._redis_module is None:
-            import redis  # type: ignore[import-not-found]
+            import redis
+
             self._redis_module = redis
         return self._redis_module
 
@@ -82,7 +82,7 @@ class RedisBackend:
             raise
 
     def subscribe(self, pattern: str, callback: Callable) -> str:
-        redis = self._lazy_import()
+        self._lazy_import()  # verify redis is available
         r = self._get_conn()
         pubsub = r.pubsub()
         pubsub.subscribe(self._channel)
@@ -121,6 +121,7 @@ class RedisBackend:
         with self._lock:
             self._subscribers[sub_id] = (pattern, callback, pubsub, thread)
         from bus_foundation.metrics_instrumentation import record_subscribe
+
         record_subscribe("redis", pattern, len(self._subscribers))
         return sub_id
 

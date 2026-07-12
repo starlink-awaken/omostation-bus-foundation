@@ -105,6 +105,7 @@ class DLQ:
         # Vacuum first to shrink the db before archiving.
         try:
             import subprocess
+
             subprocess.run(
                 ["sqlite3", str(self.db_path), "VACUUM;"],
                 capture_output=True,
@@ -125,9 +126,7 @@ class DLQ:
         else:
             # Delete the original db file now that it's archived.
             self.db_path.unlink(missing_ok=True)
-            logger.warning(
-                "dlq_rotated size_mb=%.1f archive=%s", size_mb, archive_name
-            )
+            logger.warning("dlq_rotated size_mb=%.1f archive=%s", size_mb, archive_name)
 
         # Open fresh connection.
         self._conn = self._open_conn()
@@ -154,12 +153,14 @@ class DLQ:
         for p in sorted(self.db_path.parent.glob(ARCHIVE_GLOB)):
             try:
                 stat = p.stat()
-                result.append({
-                    "path": p.name,
-                    "size_bytes": stat.st_size,
-                    "age_days": round((now - stat.st_mtime) / 86400, 2),
-                    "created_at": datetime.fromtimestamp(stat.st_mtime, UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                })
+                result.append(
+                    {
+                        "path": p.name,
+                        "size_bytes": stat.st_size,
+                        "age_days": round((now - stat.st_mtime) / 86400, 2),
+                        "created_at": datetime.fromtimestamp(stat.st_mtime, UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    }
+                )
             except OSError:
                 continue
         return result
@@ -176,6 +177,7 @@ class DLQ:
     ) -> None:
         # R91: apply redaction before persisting
         from .dlq_redaction import Redactor, load_user_config
+
         redactor = getattr(self, "_redactor", None) or Redactor(load_user_config())
         self._redactor = redactor  # cache
         redacted_json = redactor.redact_json(envelope_json, backend=backend)

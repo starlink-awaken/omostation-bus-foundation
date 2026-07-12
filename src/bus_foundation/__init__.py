@@ -1,3 +1,4 @@
+# ruff: noqa: I001
 """bus_foundation — unified bus interface (Phase B, R66 split from agora/bus).
 
 Version: 0.3.0 (R89-R97 modernization) + R93-R95 extensions.
@@ -124,11 +125,6 @@ from bus_foundation.schema import (  # noqa: E402
     CompatibilityMode,
     SchemaError,
     SchemaRegistry,
-)
-from bus_foundation.schema import (
-    register as _register_schema,
-)
-from bus_foundation.schema import (
     validate as _validate_schema,
 )
 
@@ -179,6 +175,13 @@ _default_backend = _backends["eventbus"]
 _default_dlq = DLQ()
 _router = Router(backend=_default_backend, dlq=_default_dlq)
 
+# R94: trace context surface
+from bus_foundation.observability import (  # noqa: E402
+    get_current_trace_id,
+    trace,
+)
+
+
 # Start croniter scheduler thread (no-op if not used)
 _croniter.start()
 
@@ -199,6 +202,9 @@ __all__ = [
     "CircuitState",
     "CircuitOpenError",
     "validate_envelope",
+    "CompatibilityMode",
+    "SchemaError",
+    "SchemaRegistry",
     "trace",
     "get_current_trace_id",
 ]

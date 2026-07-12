@@ -25,7 +25,7 @@ def _make_large_db(db_path: Path) -> DLQ:
         dlq.enqueue(
             event_id=f"e-{i:04d}",
             backend="test",
-            envelope_json='{"k": "v_' + 'x' * 50 + '"}',
+            envelope_json='{"k": "v_' + "x" * 50 + '"}',
             error=f"err-{i}",
         )
     return dlq

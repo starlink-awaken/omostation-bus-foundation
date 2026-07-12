@@ -95,9 +95,7 @@ class TestPydanticMigration:
         UUID(env.id)  # must parse as UUID
 
     def test_id_explicit_preserved(self) -> None:
-        env = OmniEnvelope(
-            topic="x", source="bos://t", id="custom-id-1234"
-        )
+        env = OmniEnvelope(topic="x", source="bos://t", id="custom-id-1234")
         assert env.id == "custom-id-1234"
 
     def test_timestamp_default_is_recent(self) -> None:
@@ -109,9 +107,7 @@ class TestPydanticMigration:
     def test_signature_optional(self) -> None:
         env = OmniEnvelope(topic="x", source="bos://t")
         assert env.signature is None
-        env2 = OmniEnvelope(
-            topic="x", source="bos://t", signature="0xdeadbeef"
-        )
+        env2 = OmniEnvelope(topic="x", source="bos://t", signature="0xdeadbeef")
         assert env2.signature == "0xdeadbeef"
 
     def test_busenvelope_alias_still_works(self) -> None:

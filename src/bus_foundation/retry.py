@@ -17,8 +17,9 @@ import logging
 import random
 import threading
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable, TypeVar
+from typing import Any, TypeVar
 
 from .metrics import Counter, Gauge, Registry
 
@@ -28,6 +29,7 @@ T = TypeVar("T")
 
 
 # ── Retry policy ────────────────────────────────────────────────
+
 
 @dataclass
 class RetryPolicy:
@@ -57,6 +59,7 @@ class RetryPolicy:
 
 
 # ── Circuit breaker ─────────────────────────────────────────────
+
 
 class CircuitState:
     CLOSED = "closed"
@@ -132,6 +135,7 @@ class CircuitBreaker:
 
 # ── Per-backend registry ────────────────────────────────────────
 
+
 class RetryRegistry:
     """Per-backend policy + circuit breaker. Singleton."""
 
@@ -165,7 +169,8 @@ class RetryRegistry:
                 }
                 for name, (p, cb) in zip(
                     cls._policies.keys(),
-                    zip(cls._policies.values(), [cls._breakers[n] for n in cls._policies]),
+                    zip(cls._policies.values(), [cls._breakers[n] for n in cls._policies], strict=True),
+                    strict=True,
                 )
             }
 
@@ -179,12 +184,8 @@ class RetryRegistry:
 
 # ── Metrics ─────────────────────────────────────────────────────
 
-RETRY_ATTEMPTED: Counter = Registry.register(
-    Counter("bus_retry_attempted_total", labels=("backend", "outcome"))
-)
-CIRCUIT_BREAKER_STATE: Gauge = Registry.register(
-    Gauge("bus_circuit_breaker_state", labels=("backend",))
-)
+RETRY_ATTEMPTED = Registry.register(Counter("bus_retry_attempted_total", labels=("backend", "outcome")))
+CIRCUIT_BREAKER_STATE = Registry.register(Gauge("bus_circuit_breaker_state", labels=("backend",)))
 
 
 def _publish_breaker_state(backend: str, cb: CircuitBreaker) -> None:
@@ -198,7 +199,8 @@ def _publish_breaker_state(backend: str, cb: CircuitBreaker) -> None:
 
 # ── with_retry helper ───────────────────────────────────────────
 
-def with_retry(backend: str, func: Callable[[], T]) -> T:
+
+def with_retry[T](backend: str, func: Callable[[], T]) -> T:
     """Run `func` under the backend's retry policy + circuit breaker.
 
     Raises:
@@ -233,7 +235,11 @@ def with_retry(backend: str, func: Callable[[], T]) -> T:
                 backoff = policy.compute_backoff(attempt)
                 logger.debug(
                     "bus_retry_attempt backend=%s attempt=%d/%d backoff=%.3fs error=%s",
-                    backend, attempt, policy.max_attempts, backoff, e,
+                    backend,
+                    attempt,
+                    policy.max_attempts,
+                    backoff,
+                    e,
                 )
                 time.sleep(backoff)
                 RETRY_ATTEMPTED.inc(backend=backend, outcome="retrying")
@@ -241,7 +247,9 @@ def with_retry(backend: str, func: Callable[[], T]) -> T:
                 RETRY_ATTEMPTED.inc(backend=backend, outcome="exhausted")
                 logger.warning(
                     "bus_retry_exhausted backend=%s attempts=%d error=%s",
-                    backend, policy.max_attempts, e,
+                    backend,
+                    policy.max_attempts,
+                    e,
                 )
 
     assert last_exc is not None

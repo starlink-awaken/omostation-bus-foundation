@@ -14,6 +14,7 @@ import logging
 import uuid
 from collections.abc import Callable
 
+from bus_foundation.backends.base import dispatch_to_subscribers
 from bus_foundation.backends.pattern_match import match_pattern
 from bus_foundation.envelope import BusEnvelope
 
@@ -39,12 +40,7 @@ class SSEBackend:
 
     def publish(self, envelope: BusEnvelope) -> str:
         # Fan out to in-process subscribers (e.g. tests, observability).
-        for sub_id, (pattern, callback) in self._subscribers.items():
-            if self._match(pattern, envelope.type):
-                try:
-                    callback(envelope)
-                except Exception as e:  # noqa: BLE001  # defensive fallback
-                    logger.error("sse_callback_error sub_id=%s err=%s", sub_id, e)
+        dispatch_to_subscribers(self._subscribers, envelope, ctx="sse")
         return envelope.id
 
     def subscribe(self, pattern: str, callback: Callable) -> str:

@@ -26,6 +26,7 @@ import uuid
 from collections.abc import Callable
 from pathlib import Path
 
+from bus_foundation.backends.base import safe_call
 from bus_foundation.backends.pattern_match import match_pattern
 from bus_foundation.backends.sqlite_base import SqliteBase
 from bus_foundation.envelope import OmniEnvelope
@@ -77,8 +78,7 @@ class ControlPlaneBackend(SqliteBase):
                 )
             """)
             self._conn.execute(
-                "CREATE INDEX IF NOT EXISTS control_tasks_status_updated "
-                "ON control_tasks(status, updated_at)"
+                "CREATE INDEX IF NOT EXISTS control_tasks_status_updated ON control_tasks(status, updated_at)"
             )
             self._conn.commit()
 
@@ -142,9 +142,7 @@ class ControlPlaneBackend(SqliteBase):
             stop.set()
         return present
 
-    def _poll_loop(
-        self, sub_id: str, pattern: str, callback: Callable, stop: threading.Event
-    ) -> None:
+    def _poll_loop(self, sub_id: str, pattern: str, callback: Callable, stop: threading.Event) -> None:
         """R79: poll PENDING tasks and dispatch to the callback.
 
         Each task is dispatched at most once per subscriber. To re-dispatch
@@ -165,18 +163,9 @@ class ControlPlaneBackend(SqliteBase):
                     try:
                         env = OmniEnvelope.from_json(row["envelope_json"])
                     except Exception as e:  # noqa: BLE001
-                        logger.error(
-                            "control_decode_error task_id=%s err=%s", row["id"], e
-                        )
+                        logger.error("control_decode_error task_id=%s err=%s", row["id"], e)
                         continue
-                    try:
-                        callback(env)
-                    except Exception as e:  # noqa: BLE001
-                        logger.error(
-                            "control_callback_error task_id=%s err=%s",
-                            row["id"],
-                            e,
-                        )
+                    safe_call(callback, env, ctx="control_plane", sub_id=sub_id)
                     with self._lock:
                         self._dispatched.setdefault(sub_id, set()).add(row["id"])
                 stop.wait(self._poll_interval)
@@ -230,9 +219,7 @@ class ControlPlaneBackend(SqliteBase):
         Returns True if a row was updated.
         """
         with self._lock:
-            row = self._conn.execute(
-                "SELECT retry_count FROM control_tasks WHERE id = ?", (task_id,)
-            ).fetchone()
+            row = self._conn.execute("SELECT retry_count FROM control_tasks WHERE id = ?", (task_id,)).fetchone()
             if not row:
                 return False
             retry_count = row["retry_count"] + 1
@@ -252,6 +239,7 @@ class ControlPlaneBackend(SqliteBase):
             )
             try:
                 from bus_foundation.facade.event import publish as publish_event
+
                 publish_event(
                     topic="system.fatal.dlq",
                     payload={

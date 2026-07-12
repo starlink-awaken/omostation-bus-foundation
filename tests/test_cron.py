@@ -3,14 +3,13 @@
 from __future__ import annotations
 
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
 import pytest
 
 from bus_foundation.backends.croniter import (
     CroniterBackend,
-    _CRON_5SEG_RE,
     _next_cron_run,
     _parse_cron_5seg,
     _parse_every,
@@ -132,10 +131,10 @@ class TestNextCronRun:
         # 9:00 every day. If now is 8:59, next should be in ~1 minute
         spec = _parse_cron_5seg("0 9 * * *")
         # Use a synthetic "now" at 8:59 UTC
-        synthetic_now = datetime(2026, 6, 1, 8, 59, 0, tzinfo=timezone.utc).timestamp()
+        synthetic_now = datetime(2026, 6, 1, 8, 59, 0, tzinfo=UTC).timestamp()
         next_run = _next_cron_run(spec, synthetic_now)
         # Should be 9:00:00 of same day
-        next_dt = datetime.fromtimestamp(next_run, tz=timezone.utc)
+        next_dt = datetime.fromtimestamp(next_run, tz=UTC)
         assert next_dt.hour == 9
         assert next_dt.minute == 0
 
@@ -143,9 +142,9 @@ class TestNextCronRun:
         # If now is Sunday 12pm, next Monday 9am is ~21 hours
         spec = _parse_cron_5seg("0 9 * * 1")  # Monday 9am
         # Sunday 2026-06-07 12:00:00 UTC
-        synthetic_now = datetime(2026, 6, 7, 12, 0, 0, tzinfo=timezone.utc).timestamp()
+        synthetic_now = datetime(2026, 6, 7, 12, 0, 0, tzinfo=UTC).timestamp()
         next_run = _next_cron_run(spec, synthetic_now)
-        next_dt = datetime.fromtimestamp(next_run, tz=timezone.utc)
+        next_dt = datetime.fromtimestamp(next_run, tz=UTC)
         assert next_dt.weekday() == 0  # Monday
         assert next_dt.hour == 9
         assert next_dt.minute == 0

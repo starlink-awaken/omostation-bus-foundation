@@ -22,11 +22,14 @@ Enable v2: `serve_forever(host, port, version=2)`.
 from __future__ import annotations
 
 import asyncio
+import importlib
 import json
 import logging
+import threading
 import time
 import uuid
 from collections.abc import Callable
+from typing import Any
 
 from bus_foundation.backends.pattern_match import match_pattern
 from bus_foundation.envelope import BusEnvelope
@@ -52,35 +55,34 @@ class WebSocketServerHandleV2:
         self._host = host
         self._port = port
         self._version = version
-        self._thread: threading.Thread | None = None  # noqa: F821
-        self._ready = threading.Event()  # noqa: F821
+        self._thread: threading.Thread | None = None
+        self._ready = threading.Event()
         self._started = False
 
     def start(self) -> None:
         if self._started:
             return
-        try:
-            import websockets  # type: ignore[import-not-found]
-            # Check for compression support
-            if self._version >= 2:
-                try:
-                    from websockets.extensions import permessage_deflate
-                    self._backend._compression = permessage_deflate.PerMessageDeflate(
-                        server_no_context_takeover=True,
-                        client_no_context_takeover=True,
-                    )
-                except ImportError:
-                    logger.warning("ws_v2_compression_unavailable: permessage_deflate not found")
-        except ImportError as e:
+        if not importlib.util.find_spec("websockets"):  # noqa: F811
             raise ImportError(
                 "WebSocket real transport requires the 'websockets' library. "
                 "Install with: pip install bus-foundation[ws]"
-            ) from e
+            )
+        # Check for compression support
+        if self._version >= 2:
+            try:
+                from websockets.extensions.permessage_deflate import ServerPerMessageDeflateFactory  # type: ignore[import-not-found]  # noqa: I001
+
+                self._backend._compression = ServerPerMessageDeflateFactory(
+                    server_no_context_takeover=True,
+                    client_no_context_takeover=True,
+                )
+            except ImportError:
+                logger.warning("ws_v2_compression_unavailable: permessage_deflate not found")
 
         def _run() -> None:
-            import websockets  # type: ignore[import-not-found]
+            import websockets  # type: ignore[import-not-found]  # noqa: F811,F401
 
-            async def _handler(ws: Any) -> None:  # noqa: ANN401
+            async def _handler(ws: Any) -> None:
                 ws._bus_patterns = set()
                 ws._bus_version = self._version
                 ws._bus_reconnect_token: str | None = None
@@ -121,8 +123,9 @@ class WebSocketServerHandleV2:
                 server = await websockets.serve(_handler, **kwargs)
                 self._backend._server = server
                 self._ready.set()
+                self._backend._server._sentinel = asyncio.Future()
                 try:
-                    await asyncio.Future()
+                    await self._backend._server._sentinel
                 except asyncio.CancelledError:
                     pass
                 finally:
@@ -131,7 +134,6 @@ class WebSocketServerHandleV2:
 
             asyncio.run(_main())
 
-        import threading
         t = threading.Thread(target=_run, daemon=True, name="ws-bus-server-v2")
         t.start()
         self._thread = t
@@ -165,23 +167,21 @@ class WebSocketBackendV2:
     name = "ws"
 
     def __init__(self) -> None:
-        self._clients: dict[
-            str, tuple[str, asyncio.Queue[BusEnvelope], asyncio.Task | None]
-        ] = {}
+        self._clients: dict[str, tuple[str, asyncio.Queue[BusEnvelope], asyncio.Task | None]] = {}
         self._ws_connections: set[Any] = set()
         self._server: Any = None
         self._server_task: asyncio.Task | None = None
         self._compression: Any = None
         # Reconnect tokens: token -> frozenset of patterns
         self._reconnect_tokens: dict[str, frozenset[str]] = {}
-        self._lock = threading.Lock()  # noqa: F821
+        self._lock = threading.Lock()
 
     # ── BusBackend Protocol ──────────────────────────────────────
 
     def is_available(self) -> bool:
         return True
 
-    def publish(self, envelope: BusEnvelope) -> str:
+    def publish(self, envelope: BusEnvelope) -> str:  # type: ignore[override]
         # Mode 1: in-process fanout
         for client_id, (pattern, queue, _task) in self._clients.items():
             if match_pattern(pattern, envelope.type):
@@ -198,6 +198,7 @@ class WebSocketBackendV2:
 
     def subscribe(self, pattern: str, callback: Callable) -> str:
         import asyncio
+
         client_id = f"ipc-{uuid.uuid4().hex[:8]}"
         queue: asyncio.Queue[BusEnvelope] = asyncio.Queue(maxsize=1000)
         loop = _get_or_create_loop()
@@ -224,7 +225,6 @@ class WebSocketBackendV2:
                     logger.error("ws_callback_error client_id=%s err=%s", client_id, e)
         except asyncio.CancelledError:
             logger.debug("ws_drain_cancelled client_id=%s", client_id)
-            raise
 
     # ── Mode 2: WebSocket server ────────────────────────────────
 
@@ -261,10 +261,17 @@ class WebSocketBackendV2:
                 saved_patterns = self._reconnect_tokens.pop(token, None)
             if saved_patterns is not None:
                 ws._bus_patterns = set(saved_patterns)
-                await ws.send(json.dumps({
-                    "type": MSG_ACK, "action": "reconnect", "patterns": list(saved_patterns),
-                    "version": PROTOCOL_VERSION, "heartbeat_interval": HEARTBEAT_INTERVAL,
-                }))
+                await ws.send(
+                    json.dumps(
+                        {
+                            "type": MSG_ACK,
+                            "action": "reconnect",
+                            "patterns": list(saved_patterns),
+                            "version": PROTOCOL_VERSION,
+                            "heartbeat_interval": HEARTBEAT_INTERVAL,
+                        }
+                    )
+                )
             else:
                 await ws.send(json.dumps({"type": MSG_ERROR, "message": f"invalid reconnect token: {token}"}))
         elif action == "ping":
@@ -290,15 +297,16 @@ class WebSocketBackendV2:
     def stop_server(self) -> None:
         if self._server is not None:
             srv, self._server = self._server, None
-            if hasattr(srv, "loop") and srv.loop is not None and srv.loop.is_running():
-                srv.loop.call_soon_threadsafe(srv.loop.stop)
-            import threading
+            # Cancel all WS connections gracefully
             for ws in list(self._ws_connections):
                 try:
                     asyncio.run_coroutine_threadsafe(ws.close(), srv.loop)
                 except Exception:  # noqa: BLE001
                     pass
             self._ws_connections.clear()
+            # Cancel the sentinel future so _main() exits cleanly
+            if hasattr(srv, "loop") and srv.loop is not None and srv.loop.is_running():
+                srv.loop.call_soon_threadsafe(srv._sentinel.cancel)
         self._clients.clear()
 
 

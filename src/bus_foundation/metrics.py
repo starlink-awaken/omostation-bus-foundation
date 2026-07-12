@@ -19,7 +19,9 @@ Design notes:
 from __future__ import annotations
 
 import threading
-from typing import Any
+from typing import Any, TypeVar
+
+M = TypeVar("M", bound="_Metric")
 
 
 class _Metric:
@@ -47,7 +49,7 @@ class Counter(_Metric):
             self._values[key] = self._values.get(key, 0.0) + amount
 
     def value(self, **labels: Any) -> float:
-        return self._values.get(self._label_key(labels), 0.0)
+        return self._values.get(self._label_key(labels), 0.0)  # type: ignore[no-any-return]  # type: ignore[no-any-return]
 
     def snapshot(self) -> dict[tuple[tuple[str, Any], ...], float]:
         with self._lock:
@@ -58,11 +60,21 @@ class Histogram(_Metric):
     """Distribution of values (Prometheus-style)."""
 
     DEFAULT_BUCKETS: tuple[float, ...] = (
-        0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0,
+        0.0001,
+        0.0005,
+        0.001,
+        0.005,
+        0.01,
+        0.05,
+        0.1,
+        0.5,
+        1.0,
     )
 
     def __init__(
-        self, name: str, labels: tuple[str, ...] = (),
+        self,
+        name: str,
+        labels: tuple[str, ...] = (),
         buckets: tuple[float, ...] = DEFAULT_BUCKETS,
     ):
         super().__init__(name, labels)
@@ -83,12 +95,12 @@ class Histogram(_Metric):
                     bucket_counts[i] += 1
             self._data[key] = (bucket_counts, total + value, count + 1)
 
-    def snapshot(self) -> dict[tuple[tuple[str, Any], ...], dict[str, float]]:
+    def snapshot(self) -> dict[tuple[tuple[str, Any], ...], dict[str, Any]]:
         out: dict[tuple[tuple[str, Any], ...], dict[str, float]] = {}
         with self._lock:
             for key, (bucket_counts, total, count) in self._data.items():
                 out[key] = {
-                    "buckets": dict(zip(self.buckets, bucket_counts)),
+                    "buckets": dict(zip(self.buckets, bucket_counts, strict=True)),
                     "sum": total,
                     "count": count,
                 }
@@ -145,7 +157,7 @@ class Registry:
             cls._enabled = False
 
     @classmethod
-    def register(cls, metric: _Metric) -> _Metric:
+    def register(cls, metric: M) -> M:  # type: ignore[return-value]
         with cls._lock:
             if metric.name in cls._metrics:
                 return cls._metrics[metric.name]

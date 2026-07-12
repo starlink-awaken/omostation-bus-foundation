@@ -41,6 +41,7 @@ class OmniPlane(StrEnum):
 
 class EventType(StrEnum):
     """Canonical event types for backward compatibility."""
+
     PIPELINE_COMPLETED = "pipeline:completed"
     PIPELINE_STARTED = "pipeline:started"
     MESSAGE_RECEIVED = "message:received"
@@ -156,28 +157,24 @@ class OmniEnvelope(BaseModel):
     @classmethod
     def _topic_nonempty(cls, v: str) -> str:
         if not v or not isinstance(v, str):
-            raise ValueError(
-                f"OmniEnvelope.topic must be non-empty str, got {v!r}"
-            )
+            raise ValueError(f"OmniEnvelope.topic must be non-empty str, got {v!r}")
         return v
 
     @field_validator("source_uri")
     @classmethod
     def _source_uri_nonempty(cls, v: str) -> str:
         if not v or not isinstance(v, str):
-            raise ValueError(
-                f"OmniEnvelope.source_uri must be non-empty str, got {v!r}"
-            )
+            raise ValueError(f"OmniEnvelope.source_uri must be non-empty str, got {v!r}")
         return v
 
     # ---- legacy attribute aliases (read-only) ----
 
     @property
-    def type(self) -> str:  # type: ignore[override]
+    def type(self) -> str:
         return self.topic
 
     @property
-    def source(self) -> str:  # type: ignore[override]
+    def source(self) -> str:
         return self.source_uri
 
     # ---- serialization ----

@@ -25,18 +25,20 @@ from __future__ import annotations
 import contextvars
 import logging
 import uuid
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Iterator, Optional
 
 logger = logging.getLogger(__name__)
 
 # Context variable: current trace_id (string or None)
-_current_trace_id: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar(
-    "bus_current_trace_id", default=None,
+_current_trace_id: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "bus_current_trace_id",
+    default=None,
 )
 # Context variable: current span_id (string or None)
-_current_span_id: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar(
-    "bus_current_span_id", default=None,
+_current_span_id: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "bus_current_span_id",
+    default=None,
 )
 
 
@@ -116,8 +118,8 @@ def trace(
 
     # Try OTel: optional dependency
     try:
-        from opentelemetry import trace as otel_trace  # type: ignore[import-not-found]
-        from opentelemetry.trace import Status, StatusCode  # type: ignore[import-not-found]
+        from opentelemetry import trace as otel_trace
+
         tracer = otel_trace.get_tracer("bus_foundation")
         otel_span = tracer.start_span(name)
         # Carry our trace_id into OTel span context
@@ -149,8 +151,8 @@ def attach_to_envelope(envelope: object) -> None:
         return
     if hasattr(envelope, "trace_id"):
         try:
-            if not envelope.trace_id:  # type: ignore[attr-defined]
-                envelope.trace_id = trace_id  # type: ignore[attr-defined]
+            if not envelope.trace_id:
+                envelope.trace_id = trace_id
         except (AttributeError, TypeError):
             pass
 

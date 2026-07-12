@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import time
-from unittest.mock import MagicMock
 
 import pytest
 
@@ -95,10 +94,12 @@ class TestCircuitBreaker:
 class TestWithRetry:
     def test_no_policy_passthrough(self):
         call_count = 0
+
         def func():
             nonlocal call_count
             call_count += 1
             return "ok"
+
         result = with_retry("test_backend", func)
         assert result == "ok"
         assert call_count == 1
@@ -109,12 +110,14 @@ class TestWithRetry:
             RetryPolicy(max_attempts=3, initial_backoff=0.01, jitter=0),
         )
         call_count = 0
+
         def func():
             nonlocal call_count
             call_count += 1
             if call_count < 3:
                 raise ConnectionError("transient")
             return "recovered"
+
         result = with_retry("test_backend", func)
         assert result == "recovered"
         assert call_count == 3
@@ -124,8 +127,10 @@ class TestWithRetry:
             "test_backend",
             RetryPolicy(max_attempts=2, initial_backoff=0.01, jitter=0),
         )
+
         def func():
             raise ConnectionError("never")
+
         with pytest.raises(ConnectionError):
             with_retry("test_backend", func)
 
@@ -150,10 +155,12 @@ class TestWithRetry:
             RetryPolicy(max_attempts=3, initial_backoff=0.01, retry_on=(ValueError,)),
         )
         call_count = 0
+
         def func():
             nonlocal call_count
             call_count += 1
             raise TypeError("not in retry_on")
+
         with pytest.raises(TypeError):
             with_retry("test_backend", func)
         assert call_count == 1  # no retry
@@ -162,7 +169,8 @@ class TestWithRetry:
 class TestPublicAPI:
     def test_set_retry_policy_and_stats(self):
         bus_foundation.set_retry_policy(
-            "my_backend", RetryPolicy(max_attempts=5),
+            "my_backend",
+            RetryPolicy(max_attempts=5),
         )
         stats = bus_foundation.retry_stats()
         assert "my_backend" in stats

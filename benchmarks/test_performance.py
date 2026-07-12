@@ -123,6 +123,7 @@ class TestAsyncioBench:
 
         be.subscribe("*", cb)
         import asyncio
+
         await asyncio.sleep(0.1)  # let the drain task start
 
         def _run():

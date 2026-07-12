@@ -6,6 +6,7 @@ import logging
 import uuid
 from collections.abc import Callable
 
+from bus_foundation.backends.base import dispatch_to_subscribers
 from bus_foundation.backends.pattern_match import match_pattern
 from bus_foundation.envelope import BusEnvelope
 
@@ -24,12 +25,7 @@ class MessageBusBackend:
         return True
 
     def publish(self, envelope: BusEnvelope) -> str:
-        for _sub_id, (pattern, callback) in self._subscribers.items():
-            if self._match(pattern, envelope.type):
-                try:
-                    callback(envelope)
-                except Exception as e:  # noqa: BLE001  # defensive fallback
-                    logger.error("messagebus_callback_error", e)
+        dispatch_to_subscribers(self._subscribers, envelope, ctx="messagebus")
         return envelope.id
 
     def subscribe(self, pattern: str, callback: Callable) -> str:
@@ -38,10 +34,7 @@ class MessageBusBackend:
         return sub_id
 
     def unsubscribe(self, sub_id: str) -> bool:
-        if sub_id in self._subscribers:
-            del self._subscribers[sub_id]
-            return True
-        return False
+        return self._subscribers.pop(sub_id, None) is not None
 
     @staticmethod
     def _match(pattern: str, event_type: str) -> bool:

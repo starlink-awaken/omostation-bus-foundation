@@ -34,16 +34,16 @@ class TestParseEvery:
     @pytest.mark.parametrize(
         "bad",
         [
-            "every 5s",      # seconds unsupported
-            "every 1d",      # days unsupported
-            "every 1w",      # weeks unsupported
-            "every 5",       # missing unit
+            "every 5s",  # seconds unsupported
+            "every 1d",  # days unsupported
+            "every 1w",  # weeks unsupported
+            "every 5",  # missing unit
             "every 5 mins foo",  # garbage suffix
-            "5m",            # missing "every"
-            "every 0m",      # zero
-            "every -3m",     # negative
-            "every 1.5m",    # fractional
-            "*/5 * * * *",   # cron syntax not supported
+            "5m",  # missing "every"
+            "every 0m",  # zero
+            "every -3m",  # negative
+            "every 1.5m",  # fractional
+            "*/5 * * * *",  # cron syntax not supported
             "",
             "   ",
         ],

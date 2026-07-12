@@ -4,14 +4,15 @@ from __future__ import annotations
 
 import json
 import string
-import time
 from typing import Any
 
 import pytest
 
 try:
-    from hypothesis import HealthCheck, given, settings, strategies as st
+    from hypothesis import HealthCheck, given, settings
+    from hypothesis import strategies as st
     from hypothesis.strategies import composite
+
     _HYPOTHESIS_AVAILABLE = True
 except ImportError:
     _HYPOTHESIS_AVAILABLE = False
@@ -19,8 +20,8 @@ except ImportError:
 if not _HYPOTHESIS_AVAILABLE:
     pytest.skip("hypothesis not installed", allow_module_level=True)
 
-from bus_foundation.envelope import BusEnvelope, EventType
 from bus_foundation.backends.pattern_match import match_pattern
+from bus_foundation.envelope import BusEnvelope, EventType
 
 
 # Custom strategies
@@ -79,9 +80,7 @@ class TestPatternMatchProperties:
 
     @given(
         pattern=st.sampled_from(["*", "test:*", "*:completed", "exact", ""]),
-        event_type=st.sampled_from(
-            ["test:foo", "test:completed", "exact", "other:bar", ""]
-        ),
+        event_type=st.sampled_from(["test:foo", "test:completed", "exact", "other:bar", ""]),
     )
     @settings(max_examples=50, deadline=2000)
     def test_match_pattern_deterministic(self, pattern: str, event_type: str):
@@ -119,33 +118,54 @@ class TestPatternMatchProperties:
 
 
 class TestDLQRedactionProperties:
-    @given(payload=st.dictionaries(
-        keys=st.text(min_size=1, max_size=30).filter(lambda s: s.strip()),
-        values=st.text(max_size=50),
-        max_size=8,
-    ))
+    @given(
+        payload=st.dictionaries(
+            keys=st.text(min_size=1, max_size=30).filter(lambda s: s.strip()),
+            values=st.text(max_size=50),
+            max_size=8,
+        )
+    )
     @settings(max_examples=50, deadline=2000)
     def test_redaction_does_not_lose_keys(self, payload: dict):
         """Redactor must not drop keys, only mask sensitive values."""
         from bus_foundation.dlq_redaction import Redactor
+
         r = Redactor()
         out = r.redact_dict(payload, backend="test")
         assert set(out.keys()) == set(payload.keys())
         for k, v in out.items():
             if v == "[REDACTED]":
                 assert k.lower() in (
-                    "password", "secret", "token", "api_key", "apikey",
-                    "credential", "private_key", "auth", "session",
-                ) or any(s in k.lower() for s in (
-                    "password", "secret", "token", "api_key", "apikey",
-                    "credential", "private_key", "auth", "session",
-                ))
+                    "password",
+                    "secret",
+                    "token",
+                    "api_key",
+                    "apikey",
+                    "credential",
+                    "private_key",
+                    "auth",
+                    "session",
+                ) or any(
+                    s in k.lower()
+                    for s in (
+                        "password",
+                        "secret",
+                        "token",
+                        "api_key",
+                        "apikey",
+                        "credential",
+                        "private_key",
+                        "auth",
+                        "session",
+                    )
+                )
 
     @given(s=st.text(max_size=100))
     @settings(max_examples=30, deadline=2000)
     def test_redaction_idempotent_on_safestrings(self, s: str):
         """Safe strings should round-trip without modification (no PII match)."""
         from bus_foundation.dlq_redaction import Redactor
+
         r = Redactor()
         out = r._redact_scalar(s, backend="test")
         # Should be unchanged unless it contains email/CC/IP

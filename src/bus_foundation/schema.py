@@ -21,11 +21,11 @@ from __future__ import annotations
 
 import threading
 from dataclasses import dataclass
-from enum import Enum
-from typing import Any, Type
+from enum import StrEnum
+from typing import Any
 
 
-class CompatibilityMode(str, Enum):
+class CompatibilityMode(StrEnum):
     STRICT = "strict"
     ADDITIVE = "additive"
     BREAKING = "breaking"
@@ -34,14 +34,14 @@ class CompatibilityMode(str, Enum):
 @dataclass
 class SchemaEntry:
     name: str
-    model: Type
+    model: type
     compatibility: CompatibilityMode
     field_set: frozenset[str] = frozenset()
 
     def __post_init__(self) -> None:
         # Cache field set on first registration
         try:
-            self.field_set = frozenset(self.model.model_fields.keys())
+            self.field_set = frozenset(self.model.model_fields.keys())  # type: ignore[attr-defined]
         except AttributeError:
             self.field_set = frozenset(dir(self.model))
 
@@ -56,7 +56,7 @@ class SchemaRegistry:
     def register(
         cls,
         name: str,
-        model: Type,
+        model: type,
         compatibility: CompatibilityMode = CompatibilityMode.ADDITIVE,
     ) -> SchemaEntry:
         with cls._lock:
@@ -86,7 +86,7 @@ class SchemaRegistry:
 
 def register(
     name: str,
-    model: Type,
+    model: type,
     compatibility: CompatibilityMode | str = CompatibilityMode.ADDITIVE,
 ) -> SchemaEntry:
     """Public registration helper."""
@@ -138,8 +138,7 @@ def validate(envelope: Any, target_version: str) -> None:
         missing = actual.field_set - target.field_set
         if missing:
             raise SchemaError(
-                f"additive compatibility: v{target_version} is missing "
-                f"fields {missing} from v{actual_version}"
+                f"additive compatibility: v{target_version} is missing fields {missing} from v{actual_version}"
             )
         return
 
@@ -153,6 +152,7 @@ class SchemaError(ValueError):
 
 
 # ── Default registrations ────────────────────────────────────────
+
 
 def _register_default_schemas() -> None:
     """Register v1 / v2 schemas on first import."""

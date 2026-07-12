@@ -142,4 +142,3 @@ class DataPlaneBackend:
 
     def close(self):
         self._flush()
-

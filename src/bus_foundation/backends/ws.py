@@ -165,9 +165,7 @@ class WebSocketBackend:
 
     def __init__(self) -> None:
         # mode 1: client_id -> (pattern, queue, drain_task_or_None)
-        self._clients: dict[
-            str, tuple[str, asyncio.Queue[BusEnvelope], asyncio.Task | None]
-        ] = {}
+        self._clients: dict[str, tuple[str, asyncio.Queue[BusEnvelope], asyncio.Task | None]] = {}
         # mode 2: per-WS-connection state.
         self._ws_connections: set[Any] = set()
         self._server: Any = None
@@ -253,9 +251,7 @@ class WebSocketBackend:
                 try:
                     callback(env)
                 except Exception as e:  # noqa: BLE001
-                    logger.error(
-                        "ws_callback_error client_id=%s err=%s", client_id, e
-                    )
+                    logger.error("ws_callback_error client_id=%s err=%s", client_id, e)
         except asyncio.CancelledError:
             logger.debug("ws_drain_cancelled client_id=%s", client_id)
             raise
@@ -283,25 +279,15 @@ class WebSocketBackend:
         if action == "subscribe":
             pattern = msg.get("pattern", "*")
             ws._bus_patterns.add(pattern)  # type: ignore[attr-defined]
-            await ws.send(
-                json.dumps({"type": MSG_ACK, "action": "subscribe", "pattern": pattern})
-            )
+            await ws.send(json.dumps({"type": MSG_ACK, "action": "subscribe", "pattern": pattern}))
         elif action == "unsubscribe":
             pattern = msg.get("pattern", "*")
             ws._bus_patterns.discard(pattern)  # type: ignore[attr-defined]
-            await ws.send(
-                json.dumps(
-                    {"type": MSG_ACK, "action": "unsubscribe", "pattern": pattern}
-                )
-            )
+            await ws.send(json.dumps({"type": MSG_ACK, "action": "unsubscribe", "pattern": pattern}))
         elif action == "ping":
             await ws.send(json.dumps({"type": MSG_PONG}))
         else:
-            await ws.send(
-                json.dumps(
-                    {"type": MSG_ERROR, "message": f"unknown action: {action!r}"}
-                )
-            )
+            await ws.send(json.dumps({"type": MSG_ERROR, "message": f"unknown action: {action!r}"}))
 
     def _dispatch_ws(self, ws: Any, payload: dict[str, Any]) -> None:
         """Send a JSON event to a WS client, cross-loop safe."""
@@ -312,9 +298,7 @@ class WebSocketBackend:
             loop = getattr(server, "loop", None) or getattr(server, "_loop", None)
         if loop is not None:
             try:
-                loop.call_soon_threadsafe(
-                    asyncio.ensure_future, ws.send(message)
-                )
+                loop.call_soon_threadsafe(asyncio.ensure_future, ws.send(message))
                 return
             except RuntimeError:
                 pass

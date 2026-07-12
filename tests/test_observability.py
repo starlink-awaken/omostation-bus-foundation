@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import bus_foundation
 from bus_foundation.envelope import BusEnvelope, EventType
 from bus_foundation.observability import (
     Span,
@@ -73,7 +72,7 @@ class TestEnvelopeAttachment:
     def test_attach_propagates_trace_id(self):
         env = BusEnvelope(topic="t", payload={"x": 1})
         env.trace_id = ""  # clear
-        with trace("pub") as span:
+        with trace("pub") as span:  # noqa: F841
             attach_to_envelope(env)
         assert env.trace_id == span.trace_id
 
@@ -81,7 +80,7 @@ class TestEnvelopeAttachment:
         env = BusEnvelope(topic="t", payload={"x": 1})
         existing = "abc123"
         env.trace_id = existing
-        with trace("pub") as span:
+        with trace("pub") as span:  # noqa: F841
             attach_to_envelope(env)
         # Should not overwrite
         assert env.trace_id == existing
@@ -96,8 +95,7 @@ class TestEnvelopeAttachment:
 class TestEndToEndPublish:
     def test_publish_inherits_trace_id(self):
         """Trace context in caller propagates to envelope at publish."""
-        from bus_foundation import _backends, publish
-        from bus_foundation.metrics_instrumentation import record_dlq_depth
+        from bus_foundation import publish
 
         env = BusEnvelope(topic="trace:test", payload={"x": 1}, event_type=EventType.PIPELINE_COMPLETED)
         env.trace_id = ""  # clear

@@ -10,27 +10,17 @@ False.
 from __future__ import annotations
 
 import time
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Iterator
 
 from .metrics import Counter, Gauge, Histogram, Registry
 
 # Standard metric set (names from protocols/metrics-registry.yaml)
-PUBLISH_TOTAL: Counter = Registry.register(
-    Counter("bus_publish_total", labels=("backend", "status"))
-)
-PUBLISH_LATENCY: Histogram = Registry.register(
-    Histogram("bus_publish_latency_seconds", labels=("backend",))
-)
-SUBSCRIBE_ACTIVE: Gauge = Registry.register(
-    Gauge("bus_subscribe_active", labels=("backend", "pattern"))
-)
-DLQ_DEPTH: Gauge = Registry.register(
-    Gauge("bus_dlq_depth", labels=("backend", "status"))
-)
-BACKEND_HEALTHY: Gauge = Registry.register(
-    Gauge("bus_backend_healthy", labels=("backend",))
-)
+PUBLISH_TOTAL: Counter = Registry.register(Counter("bus_publish_total", labels=("backend", "status")))
+PUBLISH_LATENCY: Histogram = Registry.register(Histogram("bus_publish_latency_seconds", labels=("backend",)))
+SUBSCRIBE_ACTIVE: Gauge = Registry.register(Gauge("bus_subscribe_active", labels=("backend", "pattern")))
+DLQ_DEPTH: Gauge = Registry.register(Gauge("bus_dlq_depth", labels=("backend", "status")))
+BACKEND_HEALTHY: Gauge = Registry.register(Gauge("bus_backend_healthy", labels=("backend",)))
 
 
 @contextmanager

@@ -29,17 +29,23 @@ from .metrics import Counter, Registry
 
 # ── Metrics ─────────────────────────────────────────────────────
 
-REDACTED_TOTAL: Counter = Registry.register(
-    Counter("bus_dlq_redacted_total", labels=("backend", "field_class"))
-)
+REDACTED_TOTAL: Counter = Registry.register(Counter("bus_dlq_redacted_total", labels=("backend", "field_class")))
 
 
 # ── Default rules ───────────────────────────────────────────────
 
 DEFAULT_FIELD_SUBSTRINGS = (
-    "password", "secret", "token", "api_key", "apikey",
-    "credential", "private_key", "auth", "session",
+    "password",
+    "secret",
+    "token",
+    "api_key",
+    "apikey",
+    "credential",
+    "private_key",
+    "auth",
+    "session",
 )
+
 
 # Luhn check
 def _is_luhn_valid(s: str) -> bool:
@@ -74,8 +80,7 @@ class Redactor:
     def __init__(self, config: RedactionConfig | None = None):
         self.config = config or RedactionConfig()
         self._user_patterns = [
-            (re.compile(p["regex"]), p.get("replacement", "[REDACTED]"))
-            for p in self.config.extra_patterns
+            (re.compile(p["regex"]), p.get("replacement", "[REDACTED]")) for p in self.config.extra_patterns
         ]
 
     def redact_dict(self, obj: dict, backend: str = "unknown") -> dict:
@@ -88,7 +93,9 @@ class Redactor:
             elif isinstance(v, dict):
                 out[k] = self.redact_dict(v, backend=backend)
             elif isinstance(v, list):
-                out[k] = [self.redact_dict(x, backend) if isinstance(x, dict) else self._redact_scalar(x, backend) for x in v]
+                out[k] = [
+                    self.redact_dict(x, backend) if isinstance(x, dict) else self._redact_scalar(x, backend) for x in v
+                ]
             elif isinstance(v, str):
                 out[k] = self._redact_scalar(v, backend)
             else:

@@ -27,6 +27,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from bus_foundation.backends.base import safe_call
 from bus_foundation.backends.pattern_match import match_pattern
 from bus_foundation.backends.sqlite_base import SqliteBase
 from bus_foundation.envelope import BusEnvelope
@@ -136,10 +137,7 @@ class PersistentBusBackend(SqliteBase):
             with self._lock:
                 if envelope.id in self._delivered_ids.get(sub_id, set()):
                     continue
-            try:
-                callback(envelope)
-            except Exception as e:  # noqa: BLE001
-                logger.error("persistent_callback_error sub_id=%s err=%s", sub_id, e)
+            safe_call(callback, envelope, ctx="persistent", sub_id=sub_id)
             with self._lock:
                 self._delivered_ids.setdefault(sub_id, set()).add(envelope.id)
         return envelope.id
@@ -211,9 +209,8 @@ class PersistentBusBackend(SqliteBase):
         # suffix); we slice the first 19 chars (YYYY-MM-DDTHH:MM:SS) and
         # subtract seconds.
         from datetime import UTC, datetime, timedelta
-        init_watermark = (datetime.now(UTC) - timedelta(seconds=catchup_window)).strftime(
-            "%Y-%m-%dT%H:%M:%SZ"
-        )
+
+        init_watermark = (datetime.now(UTC) - timedelta(seconds=catchup_window)).strftime("%Y-%m-%dT%H:%M:%SZ")
         with self._lock:
             self._watermarks[sub_id] = init_watermark
         try:
@@ -224,9 +221,7 @@ class PersistentBusBackend(SqliteBase):
                 # we don't fight the main writer for the lock. SQLite WAL
                 # allows concurrent readers.
                 try:
-                    poll_conn = sqlite3.connect(
-                        str(self.db_path), timeout=1.0, check_same_thread=False
-                    )
+                    poll_conn = sqlite3.connect(str(self.db_path), timeout=1.0, check_same_thread=False)
                     poll_conn.execute("PRAGMA journal_mode=WAL")
                     poll_conn.row_factory = sqlite3.Row
                     try:
@@ -266,14 +261,7 @@ class PersistentBusBackend(SqliteBase):
                                 e,
                             )
                             continue
-                        try:
-                            callback(env)
-                        except Exception as e:  # noqa: BLE001
-                            logger.error(
-                                "persistent_tail_callback_error sub_id=%s err=%s",
-                                sub_id,
-                                e,
-                            )
+                        safe_call(callback, env, ctx="persistent_tail", sub_id=sub_id)
                         with self._lock:
                             self._delivered_ids.setdefault(sub_id, set()).add(row["id"])
                         if row["time"] > new_watermark:
@@ -321,5 +309,3 @@ class PersistentBusBackend(SqliteBase):
                     (limit,),
                 ).fetchall()
         return [dict(r) for r in rows]
-
-

@@ -1,4 +1,5 @@
 """Test R75-LOW-1: rate-limited subscriber cleanup."""
+
 from pathlib import Path
 
 from bus_foundation.backends.persistent_bus import (
@@ -27,9 +28,11 @@ class TestR75Low1RateLimitedCleanup:
         # Patch the locked cleanup
         original = b._cleanup_subs_locked
         call_count = [0]
+
         def counting():
             call_count[0] += 1
             original()
+
         b._cleanup_subs_locked = counting  # type: ignore[assignment]
 
         # Publish CLEANUP_EVERY_N_PUBLISHES times — gate should fire once
@@ -43,9 +46,11 @@ class TestR75Low1RateLimitedCleanup:
         b = PersistentBusBackend(db_path=tmp_path / "t.db")
         call_count = [0]
         original = b._cleanup_subs_locked
+
         def counting():
             call_count[0] += 1
             original()
+
         b._cleanup_subs_locked = counting  # type: ignore[assignment]
 
         # Publish fewer than CLEANUP_EVERY_N_PUBLISHES — no gate fire

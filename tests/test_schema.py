@@ -18,6 +18,7 @@ from bus_foundation.schema import (
 @pytest.fixture(autouse=True)
 def _reset_registry():
     from bus_foundation.schema import _register_default_schemas
+
     SchemaRegistry.reset()
     _register_default_schemas()
     yield
@@ -26,12 +27,14 @@ def _reset_registry():
 
 class V1Like(BaseModel):
     """Mimics a v1 envelope (smaller field set)."""
+
     id: str = "x"
     topic: str = "t"
 
 
 class V2Like(BaseModel):
     """Mimics a v2 envelope (adds a new field)."""
+
     id: str = "x"
     topic: str = "t"
     priority: int = 5  # NEW field
@@ -39,6 +42,7 @@ class V2Like(BaseModel):
 
 class V3Like(BaseModel):
     """Mimics a v3 envelope (renames a field)."""
+
     id: str = "x"
     subject: str = "t"  # RENAMED from 'topic'
 
@@ -69,14 +73,19 @@ class TestCompatibility:
         class ModelA(BaseModel):
             id: str = "x"
             field_a: str = "a"
+
         class ModelB(BaseModel):
             id: str = "x"
             field_b: int = 1
+
         register("va", ModelA, compatibility=CompatibilityMode.STRICT)
         register("vb", ModelB, compatibility=CompatibilityMode.STRICT)
         # Build envelope manually with only ModelA fields
         env = BusEnvelope.model_construct(
-            id="x", topic="t", payload={}, schema_version=1,
+            id="x",
+            topic="t",
+            payload={},
+            schema_version=1,
         )
         with pytest.raises(SchemaError, match="strict"):
             validate(env, "vb")
@@ -96,7 +105,10 @@ class TestCompatibility:
         register("v1", V1Like, compatibility=CompatibilityMode.BREAKING)
         register("v2", V2Like, compatibility=CompatibilityMode.BREAKING)
         env = BusEnvelope.model_construct(
-            id="x", topic="t", payload={}, schema_version=1,
+            id="x",
+            topic="t",
+            payload={},
+            schema_version=1,
         )
         # Even with mismatched fields, breaking allows it
         validate(env, "v2")
@@ -109,7 +121,10 @@ class TestCompatibility:
     def test_unknown_actual_version_raises(self):
         register("v2", V2Like, compatibility=CompatibilityMode.STRICT)
         env = BusEnvelope.model_construct(
-            id="x", topic="t", payload={}, schema_version=999,
+            id="x",
+            topic="t",
+            payload={},
+            schema_version=999,
         )
         with pytest.raises(SchemaError, match="unknown envelope schema_version"):
             validate(env, "v2")
@@ -118,6 +133,7 @@ class TestCompatibility:
 class TestPublicAPI:
     def test_validate_envelope_via_bus_foundation(self):
         import bus_foundation
+
         # Default v1 / v2 should be registered
         env = BusEnvelope(topic="t", payload={"x": 1})
         # Should not raise

@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -39,7 +39,7 @@ class DLQEntry:
             t = datetime.fromisoformat(self.created_at.replace("Z", "+00:00"))
         except (ValueError, AttributeError):
             return 0.0
-        return (datetime.now(timezone.utc) - t).total_seconds()
+        return (datetime.now(UTC) - t).total_seconds()
 
 
 def _row_to_entry(row: Any) -> DLQEntry:
@@ -91,7 +91,7 @@ class DLQAdmin:
             "oldest_age_seconds": oldest_age,
         }
 
-    def ack(self, event_ids: list[str]) -> int:
+    def ack(self, event_ids: list[str]) -> int:  # type: ignore[valid-type,attr-defined]
         """Remove entries from DLQ after external handling.
 
         Returns number of deleted entries.
@@ -106,22 +106,22 @@ class DLQAdmin:
         self.dlq._conn.commit()
         return count
 
-    def retry(self, event_ids: list[str], router: Any) -> int:
+    def retry(self, event_ids: list[str], router: Any) -> int:  # type: ignore[valid-type,attr-defined]
         """Republish envelopes via the router. Returns number of retries.
 
         The caller supplies a router-like object (anything with a publish()
         method) to keep this module decoupled from the Router class.
         """
         rows = self.dlq._conn.execute(
-            "SELECT event_id, envelope_json FROM dlq WHERE event_id IN ({})".format(
-                ",".join("?" * len(event_ids))
-            ), event_ids
+            "SELECT event_id, envelope_json FROM dlq WHERE event_id IN ({})".format(",".join("?" * len(event_ids))),
+            event_ids,
         ).fetchall()
         count = 0
         for row in rows:
             eid, env_json = row["event_id"], row["envelope_json"]
             try:
                 import json
+
                 env_dict = json.loads(env_json)
                 router.publish(env_dict)
                 self.dlq._conn.execute("DELETE FROM dlq WHERE event_id = ?", (eid,))
@@ -146,7 +146,7 @@ class DLQAdmin:
             conditions.append("created_at < ?")
             params.append(before)
         where = " AND ".join(conditions) if conditions else "1=1"
-        deleted = self.dlq._conn.execute("DELETE FROM dlq WHERE {}".format(where), params).rowcount  # noqa: UP036
+        deleted = self.dlq._conn.execute(f"DELETE FROM dlq WHERE {where}", params).rowcount  # noqa: UP036
         self.dlq._conn.commit()
         return deleted
 

@@ -24,13 +24,12 @@ R79 fixes (this rewrite):
 
 from __future__ import annotations
 
-import calendar
 import logging
 import re
 import threading
 import time
 from collections.abc import Callable
-from datetime import datetime, timezone
+from datetime import datetime
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from bus_foundation.envelope import BusEnvelope
@@ -47,8 +46,15 @@ _EVERY_RE = re.compile(
 )
 
 _UNIT_SECONDS: dict[str, int] = {
-    "m": 60, "min": 60, "mins": 60, "minute": 60, "minutes": 60,
-    "h": 3600, "hr": 3600, "hour": 3600, "hours": 3600,
+    "m": 60,
+    "min": 60,
+    "mins": 60,
+    "minute": 60,
+    "minutes": 60,
+    "h": 3600,
+    "hr": 3600,
+    "hour": 3600,
+    "hours": 3600,
 }
 
 # Cap the wait between ticks so newly-scheduled jobs / shutdown
@@ -57,9 +63,7 @@ _MAX_TICK_SECONDS = 60.0
 
 # 5-segment cron regex: minute hour day month dow
 # Each field: * | */N | N | N,N,... | N-M
-_CRON_5SEG_RE = re.compile(
-    r"^\s*(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s*$"
-)
+_CRON_5SEG_RE = re.compile(r"^\s*(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s*$")
 
 
 def _parse_every(expr: str) -> int:
@@ -159,10 +163,7 @@ def _parse_cron_5seg(expr: str, tz: ZoneInfo | None = None) -> dict:
     expr = expr.strip()
     m = _CRON_5SEG_RE.match(expr)
     if not m:
-        raise ValueError(
-            f"Invalid 5-segment cron expression: {expr!r}. "
-            f"Expected: 'minute hour day month day_of_week'"
-        )
+        raise ValueError(f"Invalid 5-segment cron expression: {expr!r}. Expected: 'minute hour day month day_of_week'")
     minute_f, hour_f, day_f, month_f, dow_f = m.groups()
     spec = {
         "minutes": _parse_field(minute_f, 0, 59),
@@ -177,43 +178,8 @@ def _parse_cron_5seg(expr: str, tz: ZoneInfo | None = None) -> dict:
 
 def _parse_dow_field(field: str) -> set[int]:
     """Parse day-of-week field, accepting 0-7 (7=Sun normalized to 0)."""
-    field = field.strip()
-    if not field:
-        raise ValueError("empty cron field")
-    out: set[int] = set()
-    for part in field.split(","):
-        part = part.strip()
-        if not part:
-            continue
-        if part == "*":
-            out |= {0, 1, 2, 3, 4, 5, 6}
-            continue
-        if "/" in part:
-            base, step_str = part.split("/", 1)
-            try:
-                step = int(step_str)
-            except ValueError as e:
-                raise ValueError(f"invalid step in cron field: {part!r}") from e
-            if step <= 0:
-                raise ValueError(f"step must be positive: {part!r}")
-            if base == "*":
-                base_range = (0, 7)
-            else:
-                a, b = _parse_range(base, 0, 7)
-                base_range = (a, b)
-            for v in range(base_range[0], base_range[1] + 1, step):
-                if v == 7:
-                    out.add(0)
-                else:
-                    out.add(v)
-            continue
-        a, b = _parse_range(part, 0, 7)
-        for v in range(a, b + 1):
-            if v == 7:
-                out.add(0)
-            else:
-                out.add(v)
-    return out
+    raw = _parse_field(field, 0, 7)
+    return {0 if v == 7 else v for v in raw}
 
 
 def _next_cron_run(spec: dict, after: float, tz: ZoneInfo | None = None) -> float:
@@ -228,6 +194,7 @@ def _next_cron_run(spec: dict, after: float, tz: ZoneInfo | None = None) -> floa
       - if both specified: AND (both must match)
     """
     from datetime import timedelta
+
     tz = tz or ZoneInfo("UTC")
     after_dt = datetime.fromtimestamp(after, tz=tz)
     # Start from the next minute boundary
@@ -333,7 +300,10 @@ class CroniterBackend:
         return envelope.id
 
     def add_cron_job(
-        self, job_id: str, cron_expr: str, callback: Callable,
+        self,
+        job_id: str,
+        cron_expr: str,
+        callback: Callable,
         tz: str | None = None,
     ) -> None:
         """R96: accept either 'every Nm/Nh' (R79 BC) or 5-segment cron.
@@ -352,7 +322,7 @@ class CroniterBackend:
                 # 4-tuple: (next_run_monotonic, callback, interval_seconds_or_None, spec_or_None)
                 self._jobs[job_id] = (next_run, callback, interval, None)
             else:
-                spec = payload
+                spec: dict = payload  # type: ignore[assignment]
                 next_run = _next_cron_run(spec, time.time(), _parse_tz(tz))
                 # 4-tuple: (next_run_monotonic, callback, interval_seconds_or_None, spec_or_None)
                 self._jobs[job_id] = (next_run, callback, None, (spec, tz))
@@ -363,7 +333,10 @@ class CroniterBackend:
             return self._jobs.pop(job_id, None) is not None
 
     def subscribe(
-        self, pattern: str, callback: Callable, tz: str | None = None,
+        self,
+        pattern: str,
+        callback: Callable,
+        tz: str | None = None,
     ) -> str:
         """R96: accept either 'every Nm/Nh' (R79 BC) or 5-segment cron."""
         kind, payload = parse_schedule(pattern, tz=tz)
@@ -374,7 +347,7 @@ class CroniterBackend:
                 next_run = time.monotonic() + interval
                 self._jobs[job_id] = (next_run, callback, interval, None)
             else:
-                spec = payload
+                spec: dict = payload  # type: ignore[assignment]
                 next_run = _next_cron_run(spec, time.time(), _parse_tz(tz))
                 self._jobs[job_id] = (next_run, callback, None, (spec, tz))
         self._wakeup.set()
@@ -389,9 +362,7 @@ class CroniterBackend:
             return
         self._running = True
         self._wakeup.clear()
-        self._thread = threading.Thread(
-            target=self._run_loop, daemon=True, name="bus-croniter"
-        )
+        self._thread = threading.Thread(target=self._run_loop, daemon=True, name="bus-croniter")
         self._thread.start()
 
     def stop(self) -> None:
