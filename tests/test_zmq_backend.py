@@ -1,15 +1,32 @@
 """Tests for ZeroMQBackend — cross-process pub/sub via ZMQ inproc transport.
 
 Uses ``inproc://`` addresses so no real TCP ports are needed.
+
+These tests require the optional ``[zmq]`` extra. They are auto-skipped
+when ``pyzmq`` is not installed (e.g. in CI runners that don't ship the
+zmq extra).
 """
 
 from __future__ import annotations
 
 import threading
 import time
+from typing import Any
 
 import pytest
-import zmq
+
+# Skip the entire module if pyzmq is not installed. pytest.importorskip
+# raises a Skip at collection time, so the rest of the file can assume
+# `zmq` is importable. We use the standard `import zmq` so type checkers
+# (pyright / mypy) can resolve the type. The skip annotation is a
+# docstring + a `pytest.importorskip` invocation to actually trigger
+# the skip behavior.
+try:
+    import zmq as _zmq_module  # type: ignore[import-not-found]
+except ImportError:
+    pytest.importorskip("zmq", reason="pyzmq not installed; install bus-foundation[zmq]")
+
+import zmq  # type: ignore[import-untyped,import-not-found]
 
 from bus_foundation.backends.base import BusBackend
 from bus_foundation.backends.zmq import ZeroMQBackend
