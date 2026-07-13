@@ -30,7 +30,7 @@ class DataPlaneBackend:
         self.capacity = capacity
         self.flush_interval = flush_interval
 
-        self._buffer = collections.deque(maxlen=capacity)
+        self._buffer: collections.deque = collections.deque(maxlen=capacity)
         self._lock = threading.Lock()
         # R80: per-subscriber (pattern, callback) so flush() can filter.
         self._subscribers: dict[str, tuple[str, Callable[[list[OmniEnvelope]], None]]] = {}

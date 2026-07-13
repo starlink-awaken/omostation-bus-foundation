@@ -13,6 +13,7 @@ This module is the implementation behind `bin/bus-dlq` CLI.
 
 from __future__ import annotations
 
+import builtins
 import json
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
@@ -91,7 +92,7 @@ class DLQAdmin:
             "oldest_age_seconds": oldest_age,
         }
 
-    def ack(self, event_ids: list[str]) -> int:  # type: ignore[valid-type,attr-defined]
+    def ack(self, event_ids: builtins.list[str]) -> int:
         """Remove entries from DLQ after external handling.
 
         Returns number of deleted entries.
@@ -106,7 +107,7 @@ class DLQAdmin:
         self.dlq._conn.commit()
         return count
 
-    def retry(self, event_ids: list[str], router: Any) -> int:  # type: ignore[valid-type,attr-defined]
+    def retry(self, event_ids: builtins.list[str], router: Any) -> int:
         """Republish envelopes via the router. Returns number of retries.
 
         The caller supplies a router-like object (anything with a publish()

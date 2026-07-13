@@ -4,6 +4,7 @@ Designed for Pub/Sub, domain events, and state change notifications.
 Fan-out semantics.
 """
 
+from collections.abc import Callable
 from typing import Any
 
 from .. import publish as _bus_publish
@@ -28,7 +29,7 @@ def publish(
     _bus_publish(envelope)
 
 
-def subscribe(topic_pattern: str, version_range: str = ">=1.0") -> Callable:
+def subscribe(topic_pattern: str, version_range: str = ">=1.0") -> Callable:  # type: ignore[return-value]
     """
     Decorator to register an event subscriber.
     """

@@ -22,7 +22,7 @@ Enable v2: `serve_forever(host, port, version=2)`.
 from __future__ import annotations
 
 import asyncio
-import importlib
+import importlib.util as _importlib_util
 import json
 import logging
 import threading
@@ -62,7 +62,7 @@ class WebSocketServerHandleV2:
     def start(self) -> None:
         if self._started:
             return
-        if not importlib.util.find_spec("websockets"):  # noqa: F811
+        if not _importlib_util.find_spec("websockets"):  # noqa: F811
             raise ImportError(
                 "WebSocket real transport requires the 'websockets' library. "
                 "Install with: pip install bus-foundation[ws]"
@@ -85,10 +85,11 @@ class WebSocketServerHandleV2:
             async def _handler(ws: Any) -> None:
                 ws._bus_patterns = set()
                 ws._bus_version = self._version
-                ws._bus_reconnect_token: str | None = None
+                ws._bus_reconnect_token = None  # type: ignore[misc]
                 ws._bus_last_pong = time.monotonic()
                 ws.id = f"remote-{uuid.uuid4().hex[:8]}"
                 self._backend._ws_connections.add(ws)
+                hb_task: asyncio.Task[None] | None = None
                 try:
                     # Start heartbeat checker
                     hb_task = asyncio.create_task(_heartbeat(ws))
@@ -100,7 +101,8 @@ class WebSocketServerHandleV2:
                             continue
                         await self._backend._ws_dispatch(ws, msg)
                 finally:
-                    hb_task.cancel()
+                    if hb_task is not None:
+                        hb_task.cancel()
                     self._backend._ws_connections.discard(ws)
 
             async def _heartbeat(ws: Any) -> None:
@@ -297,16 +299,28 @@ class WebSocketBackendV2:
     def stop_server(self) -> None:
         if self._server is not None:
             srv, self._server = self._server, None
-            # Cancel all WS connections gracefully
-            for ws in list(self._ws_connections):
-                try:
-                    asyncio.run_coroutine_threadsafe(ws.close(), srv.loop)
-                except Exception:  # noqa: BLE001
-                    pass
+            loop: asyncio.AbstractEventLoop | None = None
+            try:
+                loop = getattr(srv, "loop", None)
+            except Exception:  # noqa: BLE001
+                loop = None
+            # Cancel all WS connections gracefully (only if a running
+            # loop is reachable; otherwise the daemon thread is already
+            # dying and we just clear the registry).
+            if loop is not None and loop.is_running():
+                for ws in list(self._ws_connections):
+                    try:
+                        asyncio.run_coroutine_threadsafe(ws.close(), loop)
+                    except Exception:  # noqa: BLE001
+                        pass
+                # Cancel the sentinel future so _main() exits cleanly.
+                sentinel = getattr(srv, "_sentinel", None)
+                if sentinel is not None:
+                    try:
+                        loop.call_soon_threadsafe(sentinel.cancel)
+                    except Exception:  # noqa: BLE001
+                        pass
             self._ws_connections.clear()
-            # Cancel the sentinel future so _main() exits cleanly
-            if hasattr(srv, "loop") and srv.loop is not None and srv.loop.is_running():
-                srv.loop.call_soon_threadsafe(srv._sentinel.cancel)
         self._clients.clear()
 
 

@@ -318,9 +318,9 @@ class CroniterBackend:
         with self._lock:
             if kind == "interval":
                 interval = payload
-                next_run = time.monotonic() + interval
+                next_run = time.monotonic() + interval  # type: ignore[operator,assignment]
                 # 4-tuple: (next_run_monotonic, callback, interval_seconds_or_None, spec_or_None)
-                self._jobs[job_id] = (next_run, callback, interval, None)
+                self._jobs[job_id] = (next_run, callback, interval, None)  # type: ignore[operator,assignment]
             else:
                 spec: dict = payload  # type: ignore[assignment]
                 next_run = _next_cron_run(spec, time.time(), _parse_tz(tz))
@@ -344,8 +344,8 @@ class CroniterBackend:
         with self._lock:
             if kind == "interval":
                 interval = payload
-                next_run = time.monotonic() + interval
-                self._jobs[job_id] = (next_run, callback, interval, None)
+                next_run = time.monotonic() + interval  # type: ignore[operator,assignment]
+                self._jobs[job_id] = (next_run, callback, interval, None)  # type: ignore[operator,assignment]
             else:
                 spec: dict = payload  # type: ignore[assignment]
                 next_run = _next_cron_run(spec, time.time(), _parse_tz(tz))

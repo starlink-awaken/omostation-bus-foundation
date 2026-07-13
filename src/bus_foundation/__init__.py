@@ -149,7 +149,7 @@ class FallbackLogger:
         self.fallback_file = Path(fallback_file).expanduser()
         self.fallback_file.parent.mkdir(parents=True, exist_ok=True)
 
-    def critical(self, message: str, envelope: BusEnvelope = None):
+    def critical(self, message: str, envelope: BusEnvelope | None = None) -> None:
         try:
             with open(self.fallback_file, "a") as f:
                 f.write(f"[FALLBACK CRITICAL] {message}\\n")
@@ -169,7 +169,8 @@ _backends: dict[str, BusBackend] = {
     "eventbus": EventBusBackend(),
     "croniter": CroniterBackend(),
 }
-_croniter = _backends["croniter"]
+# Type-narrowed alias so pyright/mypy see CroniterBackend.start().
+_croniter: CroniterBackend = _backends["croniter"]  # type: ignore[assignment]
 
 _default_backend = _backends["eventbus"]
 _default_dlq = DLQ()
@@ -211,7 +212,19 @@ __all__ = [
 
 
 def publish(envelope: BusEnvelope) -> str:
-    """Publish via the appropriate backend (envelope.backend, default eventbus)."""
+    """Publish via the appropriate backend (envelope.backend, default eventbus).
+
+    .. deprecated::
+        Prefer the per-plane facades for new code:
+
+        - :func:`bus_foundation.facade.event.publish` (pub/sub, fan-out)
+        - :func:`bus_foundation.facade.control.submit_task` (ack/nack/DLQ)
+        - :func:`bus_foundation.facade.data.emit` (high-throughput, fire-and-forget)
+
+        This top-level entry is kept for backward compatibility (agora.bus
+        consumers + legacy adapters) but is no longer the recommended
+        surface. It will be removed in 1.0.0.
+    """
     backend_name = getattr(envelope, "backend", None) or "eventbus"
     # R94: attach current trace_id to envelope before publish
     from bus_foundation.observability import attach_to_envelope
@@ -280,7 +293,11 @@ def _dlq_count(dlq: DLQ, status: str) -> int:
 
 
 def subscribe(pattern: str) -> Callable:
-    """Decorator: register a subscriber for a pattern (uses eventbus backend)."""
+    """Decorator: register a subscriber for a pattern (uses eventbus backend).
+
+    .. deprecated::
+        Use :func:`bus_foundation.facade.event.subscribe` for new code.
+    """
 
     def decorator(fn: Callable) -> Callable:
         sub_id = _default_backend.subscribe(pattern, fn)
@@ -291,7 +308,11 @@ def subscribe(pattern: str) -> Callable:
 
 
 def schedule(expr: str) -> Callable:
-    """Decorator: schedule a recurring task via the croniter backend."""
+    """Decorator: schedule a recurring task via the croniter backend.
+
+    .. deprecated::
+        Use :func:`bus_foundation.facade.control.schedule_callback` for new code.
+    """
     if not isinstance(expr, str):
         raise TypeError(f"schedule expression must be str, got {type(expr)}")
 

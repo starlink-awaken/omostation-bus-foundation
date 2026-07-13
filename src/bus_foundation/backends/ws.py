@@ -197,7 +197,7 @@ class WebSocketBackend:
         # Mode 2: WS server fanout. We don't await; if a client's
         # outbound queue is full we log and drop (fire-and-forget).
         for ws in list(self._ws_connections):
-            patterns = getattr(ws, "_bus_patterns", set())
+            patterns: set[str] = getattr(ws, "_bus_patterns", set())
             if any(self._match(p, envelope.type) for p in patterns):
                 self._dispatch_ws(ws, _encode_event(envelope))
 
@@ -335,20 +335,13 @@ class WebSocketBackend:
             task.cancel()
         for ws in list(self._ws_connections):
             try:
-                # websockets>=13: close() returns a coroutine that must
-                # be awaited. If a loop is running schedule the wait;
-                # otherwise call close() and let GC clean up the
-                # unawaited coroutine (no functional impact at
-                # shutdown, just a runtime warning otherwise).
-                close_coro = ws.close()
                 try:
                     loop = asyncio.get_event_loop()
-                    if loop.is_running():
-                        loop.create_task(close_coro)
-                    else:
-                        asyncio.ensure_future(close_coro)
                 except RuntimeError:
-                    pass  # no loop; let the warning be harmless
+                    loop = None
+                if loop is not None and loop.is_running():
+                    close_coro = ws.close()
+                    loop.create_task(close_coro)
             except Exception:  # noqa: BLE001
                 pass
         self._ws_connections.clear()

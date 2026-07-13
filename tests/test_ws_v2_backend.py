@@ -316,3 +316,39 @@ class TestWebSocketServerV2:
             import time as _time
 
             _time.sleep(0.2)
+
+    def test_stop_server_idempotent_without_loop(self) -> None:
+        """stop_server() must be safe when called twice (no AttributeError)."""
+        be = WebSocketBackendV2()
+        # Never started; stop_server should be a no-op.
+        be.stop_server()
+        be.stop_server()
+        assert be._server is None
+        assert be._ws_connections == set()
+        assert be._clients == {}
+
+    def test_serve_then_stop_no_unbound_task(self) -> None:
+        """Regression: hb_task must be initialized before asyncio.create_task.
+
+        The original code had hb_task declared inside the try block, so
+        if the connection dropped between `add()` and `create_task`,
+        the `finally` would raise UnboundLocalError.
+        """
+        _require_websockets()
+        be = WebSocketBackendV2()
+        port = _free_port()
+        handle = be.serve_forever(host="127.0.0.1", port=port, version=1)
+        # Simulate the race: a client connects, then immediately disconnects.
+        try:
+            import websockets.sync.client as ws_sync
+
+            with ws_sync.connect(f"ws://127.0.0.1:{port}") as ws:
+                ws.send(json.dumps({"action": "subscribe", "pattern": "*"}))
+                ws.recv()  # ack
+            # Connection closed; backend's _handler should have run the
+            # finally block without UnboundLocalError on hb_task.
+        finally:
+            handle.stop()
+            import time as _time
+
+            _time.sleep(0.2)

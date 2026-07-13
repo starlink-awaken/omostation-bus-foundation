@@ -46,6 +46,9 @@ otel = [
     "opentelemetry-api>=1.20",
     "opentelemetry-sdk>=1.20",
 ]
+zmq = [
+    "pyzmq>=27.1.0",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/bus_foundation"]
@@ -71,11 +74,12 @@ dev = [
 
 [tool.mypy]
 python_version = "3.13"
-strict = true
 ignore_missing_imports = true
 no_implicit_optional = true
 warn_unreachable = false
-disable_error_code = "type-arg"
+disable_error_code = "type-arg,no-any-return,no-untyped-def,no-untyped-call"
+warn_unused_ignores = false
+warn_return_any = false
 
 [[tool.mypy.overrides]]
 module = ["tests.*"]

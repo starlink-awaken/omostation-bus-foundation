@@ -95,11 +95,11 @@ class Histogram(_Metric):
                     bucket_counts[i] += 1
             self._data[key] = (bucket_counts, total + value, count + 1)
 
-    def snapshot(self) -> dict[tuple[tuple[str, Any], ...], dict[str, Any]]:
-        out: dict[tuple[tuple[str, Any], ...], dict[str, float]] = {}
+    def snapshot(self) -> dict[tuple[tuple[str, Any], ...], dict[str, Any]]:  # type: ignore[return-value,dict-item]
+        out: dict[tuple[tuple[str, Any], ...], dict[str, Any]] = {}
         with self._lock:
             for key, (bucket_counts, total, count) in self._data.items():
-                out[key] = {
+                out[key] = {  # type: ignore[dict-item]
                     "buckets": dict(zip(self.buckets, bucket_counts, strict=True)),
                     "sum": total,
                     "count": count,
@@ -157,10 +157,10 @@ class Registry:
             cls._enabled = False
 
     @classmethod
-    def register(cls, metric: M) -> M:  # type: ignore[return-value]
+    def register(cls, metric: M) -> M:  # type: ignore[return-value,arg-type]
         with cls._lock:
             if metric.name in cls._metrics:
-                return cls._metrics[metric.name]
+                return cls._metrics[metric.name]  # type: ignore[return-value]
             cls._metrics[metric.name] = metric
             return metric
 

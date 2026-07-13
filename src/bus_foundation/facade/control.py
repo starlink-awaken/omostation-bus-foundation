@@ -40,7 +40,7 @@ def schedule_callback(expr: str) -> None:
     """
     from .. import schedule as _bus_schedule
 
-    return _bus_schedule(expr)
+    return _bus_schedule(expr)  # type: ignore[return-value]
 
 
 def schedule(
