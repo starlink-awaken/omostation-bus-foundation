@@ -8,12 +8,12 @@ Uses ZeroMQ PUB/SUB sockets in a peer-to-peer mesh:
 Usage:
     pip install bus-foundation[zmq]
 
-    # Process A
-    backend_a = ZeroMQBackend(port=8766)
+    # Process A (binds a PUB socket on the default port, e.g. ``ZeroMQBackend(port=PORT_A)``)
+    backend_a = ZeroMQBackend(port=PORT_A)  # noqa: F821
     backend_a.publish(envelope)  # fans out to all connected SUB peers
 
     # Process B (connects to A's PUB)
-    backend_b = ZeroMQBackend(port=8767, peers=["tcp://localhost:8766"])
+    backend_b = ZeroMQBackend(port=PORT_B, peers=[f"tcp://localhost:{PORT_A}"])  # noqa: F821,F821
     backend_b.subscribe("*", handler)  # receives A's messages
 
 Requirements:
