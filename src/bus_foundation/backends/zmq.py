@@ -39,7 +39,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_PORT = 8770  # NOTE: do not use 8766 — reserved for KOS REST API (port-registry.yaml)
+DEFAULT_PORT = 8770  # NOTE: do not use KOS_REST_API_PORT — reserved by port-registry
 DEFAULT_PEERS: list[str] = []
 POLL_TIMEOUT_MS = 500
 
