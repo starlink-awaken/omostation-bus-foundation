@@ -131,12 +131,12 @@ class TestBusDLQCLI:
     @pytest.fixture
     def workspace_root(self) -> Path:
         # tests live at projects/bus-foundation/tests/
-        # bin/bus-dlq is at <repo_root>/bin/bus-dlq
+        # bin/ssot/bus-dlq is at <repo_root>/bin/ssot/bus-dlq
         return Path(__file__).resolve().parent.parent.parent.parent
 
     def test_cli_help(self, workspace_root: Path):
         result = subprocess.run(
-            [sys.executable, "bin/bus-dlq", "--help"],
+            [sys.executable, "bin/ssot/bus-dlq", "--help"],
             capture_output=True,
             text=True,
             cwd=str(workspace_root),
@@ -155,7 +155,7 @@ class TestBusDLQCLI:
         result = subprocess.run(
             [
                 sys.executable,
-                "bin/bus-dlq",
+                "bin/ssot/bus-dlq",
                 "--db-path",
                 str(db),
                 "list",
