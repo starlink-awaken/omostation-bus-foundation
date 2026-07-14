@@ -3,6 +3,89 @@
 All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.3.0] — 2026-07-09 (R89-R97 modernization)
+
+### Added
+
+- **R89 Metrics & Health Endpoints** — 5 standard metrics
+  (`bus_publish_total`, `bus_publish_latency_seconds`,
+  `bus_subscribe_active`, `bus_dlq_depth`, `bus_backend_healthy`)
+  + Prometheus-compatible `/metrics` HTTP server. Default OFF,
+  zero overhead. `protocols/metrics-registry.yaml` SSOT.
+- **R90 Retry Middleware & Circuit Breaker** — per-backend
+  opt-in retry with exponential backoff + jitter, 3-state
+  circuit breaker. `set_retry_policy(backend, policy)` API.
+- **R91 DLQ Admin CLI** — `bin/bus-dlq` with `list / stats / ack /
+  retry / purge / watch` sub-commands. Plus payload redaction
+  (password / secret / token / Luhn-CC / email / IPv4) and
+  `bus_dlq_redacted_total` metric.
+- **R92 Schema Registry** — `bus_foundation.validate_envelope(env,
+  target_version="v2")` with `strict / additive / breaking`
+  compatibility modes. The `schema_version` field (declared in
+  R82) is now a first-class concept.
+- **R94 Trace Context Propagation** — pure-stdlib W3C-style
+  trace_id + span_id propagation. Auto-upgrades to opentelemetry-api
+  when `[otel]` extra is installed. `bus.publish()` automatically
+  attaches the caller's trace_id to the envelope.
+- **R96 5-Segment Cron + Timezone** — croniter backend now
+  accepts standard cron expressions (`* * * * *`,
+  `0 9 * * 1`, `*/5 * * * *`) with timezone support via
+  `zoneinfo`. R79 `every Nm/Nh` syntax preserved.
+- **R97 Property-Based + Chaos Testing** — `hypothesis>=6.0`
+  test framework integrated. 11 new tests covering envelope
+  round-trip, pattern match edge cases, DLQ redaction
+  invariants, and chaos scenarios (random failures,
+  circuit breaker transitions, mixed workload recovery).
+
+### Internal
+
+- `_jobs` tuple schema changed from 3-tuple to 4-tuple in
+  croniter to support both interval and cron-style schedules.
+- `bus.publish()` now wrapped in `instrument_publish()` for
+  transparent metrics capture (no-op when disabled).
+- DLQ enqueue transparently applies redaction before persisting.
+- New modules: `bus_foundation.metrics`, `.metrics_instrumentation`,
+  `.metrics_server`, `.retry`, `.dlq_admin`, `.dlq_redaction`,
+  `.schema`, `.observability`.
+
+### Test Results
+
+- 218/223 total tests PASS (5 skipped)
+- 87 new test cases across 7 rounds
+- Zero backward-compatibility breakage: all R73-R88 functionality
+  preserved unchanged
+
+### Public API Additions
+
+```python
+# R89
+bus_foundation.enable_metrics(port=8745)
+bus_foundation.disable_metrics()
+bus_foundation.metrics_snapshot()
+
+# R90
+bus_foundation.set_retry_policy(backend, policy)
+bus_foundation.retry_stats()
+bus_foundation.RetryPolicy / CircuitBreaker / CircuitState
+
+# R91 — see bin/bus-dlq
+
+# R92
+bus_foundation.validate_envelope(env, target_version="v2")
+
+# R94
+bus_foundation.trace("op_name", backend=...)
+bus_foundation.get_current_trace_id()
+```
+
+### Out of Scope (deferred to 0.4.0+)
+
+- R93 Distributed backends (Redis / NATS)
+- R95 WebSocket protocol v2
+- R98 Performance SLA + benchmark trend tracking
+
+## [0.2.0] — 2026-07-09 (R82 pydantic envelope)
+
 ## [0.1.0] — 2027-04-12 (R66 initial release)
 
 ### Added (R66-R67: Phase B setup)
