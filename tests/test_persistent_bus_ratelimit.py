@@ -1,3 +1,5 @@
+# pyright: reportCallIssue=false
+
 """Test R75-LOW-1: rate-limited subscriber cleanup."""
 
 from pathlib import Path

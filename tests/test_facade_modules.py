@@ -73,7 +73,7 @@ def test_data_emit_calls_publish(monkeypatch: pytest.MonkeyPatch) -> None:
         name = "data_test"
 
         def publish(self, envelope: object) -> str:
-            calls.append(envelope.topic if hasattr(envelope, "topic") else "?")
+            calls.append(envelope.topic if hasattr(envelope, "topic") else "?")  # type: ignore[reportAttributeAccessIssue]
             return "ok"
 
         def is_available(self) -> bool:

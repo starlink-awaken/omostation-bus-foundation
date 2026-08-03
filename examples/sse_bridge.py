@@ -20,8 +20,8 @@ from __future__ import annotations
 import asyncio
 import logging
 
-from fastapi import FastAPI, Request
-from fastapi.responses import StreamingResponse
+from fastapi import FastAPI, Request  # type: ignore[reportMissingImports]
+from fastapi.responses import StreamingResponse  # type: ignore[reportMissingImports]
 
 from bus_foundation import BusEnvelope, publish
 from bus_foundation.backends.sse import SSEBackend
@@ -103,7 +103,8 @@ async def emit(topic: str = "demo:ping", message: str = "hello"):
 
 
 if __name__ == "__main__":
-    import uvicorn
+    import uvicorn  # type: ignore[reportMissingImports]
+
     print(f"SSE Bridge listening at http://{HOST}:{PORT}/events")
     print(f"  Emit test:   curl http://{HOST}:{PORT}/emit")
     print(f"  Stream SSE:  curl -N http://{HOST}:{PORT}/events")

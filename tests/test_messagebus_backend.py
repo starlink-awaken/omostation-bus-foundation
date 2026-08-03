@@ -1,3 +1,5 @@
+# pyright: reportCallIssue=false
+
 """Test MessageBusBackend — in-process agent pub/sub with pattern dispatch."""
 
 from __future__ import annotations

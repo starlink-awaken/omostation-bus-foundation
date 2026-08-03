@@ -23,5 +23,5 @@ class TestRealtimeUnsubscribeFix:
         received = []
         sub_id = b.subscribe("task-1", lambda env, v: received.append((env, v)))
         b.unsubscribe(sub_id)
-        b.publish(BusEnvelope(type="task-1", source="t"))
+        b.publish(BusEnvelope(type="task-1", source="t"))  # type: ignore[reportCallIssue]
         assert received == []

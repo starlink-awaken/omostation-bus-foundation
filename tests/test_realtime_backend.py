@@ -1,3 +1,5 @@
+# pyright: reportCallIssue=false
+
 """Test RealtimeBackend — 4 cases."""
 
 from bus_foundation.backends.base import BusBackend

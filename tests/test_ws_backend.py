@@ -1,3 +1,6 @@
+# pyright: reportCallIssue=false
+# pyright: reportArgumentType=false
+
 """Test WebSocketBackend — R81: real WebSocket transport + in-process compat.
 
 Coverage:

@@ -57,8 +57,7 @@ def __getattr__(name: str):  # PEP 562 module-level __getattr__
                 "ZeroMQBackend": "zmq",
             }[name]
             raise ImportError(
-                f"{name} requires the '{extra}' optional dependency. "
-                f"Install with: pip install bus-foundation[{extra}]"
+                f"{name} requires the '{extra}' optional dependency. Install with: pip install bus-foundation[{extra}]"
             ) from e
         return getattr(mod, attr)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

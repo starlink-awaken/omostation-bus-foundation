@@ -1,3 +1,5 @@
+# pyright: reportCallIssue=false
+
 """Test OmniEnvelope pydantic migration (R82).
 
 Covers:

@@ -26,7 +26,7 @@ import os
 import time
 from typing import Any
 
-import httpx
+import httpx  # type: ignore[reportMissingImports]
 
 from bus_foundation import BusEnvelope  # noqa: F401
 from bus_foundation.backends.data_plane import DataPlaneBackend

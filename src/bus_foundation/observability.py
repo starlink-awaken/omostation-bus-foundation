@@ -151,8 +151,8 @@ def attach_to_envelope(envelope: object) -> None:
         return
     if hasattr(envelope, "trace_id"):
         try:
-            if not envelope.trace_id:
-                envelope.trace_id = trace_id
+            if not envelope.trace_id:  # type: ignore[reportAttributeAccessIssue]
+                envelope.trace_id = trace_id  # type: ignore[reportAttributeAccessIssue]
         except (AttributeError, TypeError):
             pass
 

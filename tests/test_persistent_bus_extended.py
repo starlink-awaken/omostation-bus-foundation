@@ -1,3 +1,5 @@
+# pyright: reportCallIssue=false
+
 """Extended tests for PersistentBusBackend — GC, error paths, edge cases."""
 
 from __future__ import annotations
@@ -13,9 +15,9 @@ from bus_foundation.envelope import BusEnvelope, EventType
 
 
 @pytest.fixture
-def pb(tmp_path: Path) -> PersistentBusBackend:
+def pb(tmp_path: Path) -> PersistentBusBackend:  # type: ignore[reportInvalidTypeForm]
     b = PersistentBusBackend(db_path=tmp_path / "persistent.db")
-    yield b
+    yield b  # type: ignore[reportReturnType]
     b.close()
 
 

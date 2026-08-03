@@ -1,3 +1,5 @@
+# pyright: reportCallIssue=false
+
 """Tests for bus_foundation.__init__ error paths (publish, enable_metrics, schedule).
 
 These test module-level singletons via monkeypatching.

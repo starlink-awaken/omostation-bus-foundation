@@ -68,9 +68,9 @@ class _BusHarness:
 
 
 @pytest.fixture
-def harness(tmp_path) -> _BusHarness:
+def harness(tmp_path) -> _BusHarness:  # type: ignore[reportInvalidTypeForm]
     h = _BusHarness(tmp_path)
-    yield h
+    yield h  # type: ignore[reportReturnType]
     h.close()
 
 
@@ -178,10 +178,10 @@ def test_unavailable_backend_routes_to_dlq(tmp_path) -> None:
             raise RuntimeError("unreachable")
 
     dlq = DLQ(db_path=tmp_path / "dlq2.db")
-    router = Router(backend=_Broken(), dlq=dlq)
+    router = Router(backend=_Broken(), dlq=dlq)  # type: ignore[reportArgumentType]
     env = BusEnvelope(
-        type="system:bus:health",
-        source="e2e-cross",
+        type="system:bus:health",  # type: ignore[reportCallIssue]
+        source="e2e-cross",  # type: ignore[reportCallIssue]
         payload={"k": "v"},
     )
     eid = router.publish(env)

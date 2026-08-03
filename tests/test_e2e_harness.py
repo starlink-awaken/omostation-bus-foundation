@@ -1,3 +1,5 @@
+# pyright: reportCallIssue=false
+
 """Cross-backend e2e harness for bus-foundation (Round 0).
 
 Pattern: given a backend A and backend B (possibly different types),
@@ -25,7 +27,7 @@ from bus_foundation.backends.eventbus import EventBusBackend
 from bus_foundation.backends.messagebus import MessageBusBackend
 from bus_foundation.backends.sse import SSEBackend
 from bus_foundation.dlq import DLQ
-from bus_foundation.envelope import BusEnvelope, EventType
+from bus_foundation.envelope import BusEnvelope
 from bus_foundation.router import Router
 
 
@@ -160,4 +162,3 @@ class TestPatternMatching:
         # Should only receive the foo one
         assert _wait_for(lambda: len(received) == 1, timeout=0.5)
         assert received[0].topic == "foo:thing"
-

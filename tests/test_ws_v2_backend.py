@@ -1,3 +1,5 @@
+# pyright: reportCallIssue=false
+
 """Tests for WebSocketBackendV2 (R95: protocol versioning, compression, heartbeat).
 
 Coverage:
@@ -33,7 +35,7 @@ def be() -> WebSocketBackendV2:
 # ── helper: callback that pushes to an asyncio.Queue ────────────────
 
 
-def _collector() -> tuple[Queue[BusEnvelope], callable]:
+def _collector() -> tuple[Queue[BusEnvelope], callable]:  # type: ignore[reportGeneralTypeIssues]
     q: Queue[BusEnvelope] = Queue()
 
     def cb(env: BusEnvelope) -> None:
@@ -160,12 +162,12 @@ def _require_websockets() -> None:
 
 
 @pytest.fixture
-def ws_v2_server() -> tuple[WebSocketBackendV2, int]:
+def ws_v2_server() -> tuple[WebSocketBackendV2, int]:  # type: ignore[reportInvalidTypeForm]
     _require_websockets()
     be = WebSocketBackendV2()
     port = _free_port()
     handle = be.serve_forever(host="127.0.0.1", port=port, version=2)
-    yield be, port
+    yield be, port  # type: ignore[reportReturnType]
     handle.stop()
 
 

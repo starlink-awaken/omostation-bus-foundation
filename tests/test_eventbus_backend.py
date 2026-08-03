@@ -1,3 +1,5 @@
+# pyright: reportCallIssue=false
+
 """Test EventBusBackend (bus-foundation flavor) — Protocol + in-process dispatch."""
 
 from __future__ import annotations

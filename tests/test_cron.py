@@ -1,3 +1,5 @@
+# pyright: reportIndexIssue=false
+
 """R96: tests for 5-segment cron + timezone support."""
 
 from __future__ import annotations

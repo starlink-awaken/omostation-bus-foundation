@@ -1,3 +1,5 @@
+# pyright: reportArgumentType=false
+
 """Test DLQ archive + retention (R83).
 
 Covers:

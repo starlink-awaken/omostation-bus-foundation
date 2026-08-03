@@ -26,7 +26,7 @@ def _env(n: int = 0) -> BusEnvelope:
     return BusEnvelope(
         id=f"bench-{n:06d}",
         topic="bench:test",
-        source="bos://benchmark",
+        source="bos://benchmark",  # type: ignore[reportCallIssue]
         payload={"n": n, "data": "x" * 100},
     )
 

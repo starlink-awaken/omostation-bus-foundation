@@ -15,9 +15,9 @@ from bus_foundation.dlq_redaction import RedactionConfig, Redactor
 
 
 @pytest.fixture
-def tmp_dlq(tmp_path: Path) -> DLQ:
+def tmp_dlq(tmp_path: Path) -> DLQ:  # type: ignore[reportInvalidTypeForm]
     dlq = DLQ(db_path=tmp_path / "test_dlq.db")
-    yield dlq
+    yield dlq  # type: ignore[reportReturnType]
     dlq.close()
 
 

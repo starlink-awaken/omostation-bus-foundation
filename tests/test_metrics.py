@@ -106,7 +106,7 @@ class TestEndToEndPublish:
         """Verify that bus.publish() updates publish_total + publish_latency."""
         Registry.enable()
         bus_foundation.enable_metrics(server=False)
-        env = BusEnvelope(topic="test:r89", payload={"k": 1}, event_type=EventType.PIPELINE_COMPLETED)
+        env = BusEnvelope(topic="test:r89", payload={"k": 1}, event_type=EventType.PIPELINE_COMPLETED)  # type: ignore[reportCallIssue]
         bus_foundation.publish(env)
         assert PUBLISH_TOTAL.value(backend="eventbus", status="success") >= 1.0
 
@@ -129,7 +129,7 @@ class TestHTTPServer:
         try:
             try:
                 urllib.request.urlopen("http://127.0.0.1:18746/health", timeout=2.0)
-            except urllib.error.HTTPError as e:
+            except urllib.error.HTTPError as e:  # type: ignore[reportAttributeAccessIssue]
                 assert e.code == 404
         finally:
             bus_foundation.disable_metrics()

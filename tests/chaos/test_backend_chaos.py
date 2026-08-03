@@ -52,7 +52,7 @@ class TestChaosScenarios:
 
         # Run 100 times with 50% failure rate — should always preserve id eventually
         for _ in range(100):
-            env = BusEnvelope(topic="chaos:test", payload={"x": 1}, event_type=EventType.PIPELINE_COMPLETED)
+            env = BusEnvelope(topic="chaos:test", payload={"x": 1}, event_type=EventType.PIPELINE_COMPLETED)  # type: ignore[reportCallIssue]
             try:
                 result = with_retry("chaos_backend", lambda e=env: flaky_publish(e))
                 assert result == env.id

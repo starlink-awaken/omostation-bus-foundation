@@ -51,9 +51,7 @@ def test_patterns_use_globs() -> None:
         if not name.startswith("PATTERN_"):
             continue
         value = getattr(topics, name)
-        assert value.endswith(".*") or value.endswith(":*") or value == "*", (
-            f"{name}={value!r} invalid pattern"
-        )
+        assert value.endswith(".*") or value.endswith(":*") or value == "*", f"{name}={value!r} invalid pattern"
 
 
 def test_no_duplicate_values() -> None:

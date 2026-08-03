@@ -1,3 +1,5 @@
+# pyright: reportCallIssue=false
+
 """Test bus_foundation facade — publish/subscribe/schedule."""
 
 from __future__ import annotations

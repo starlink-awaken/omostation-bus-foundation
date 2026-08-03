@@ -48,11 +48,11 @@ def _require_zmq() -> Any:
     """Lazy import of pyzmq; raises a clear error if not installed."""
     try:
         import zmq
+
         return zmq
     except ImportError as e:
         raise ImportError(
-            "ZeroMQBackend requires the 'zmq' optional dependency. "
-            "Install with: pip install bus-foundation[zmq]"
+            "ZeroMQBackend requires the 'zmq' optional dependency. Install with: pip install bus-foundation[zmq]"
         ) from e
 
 

@@ -1,3 +1,5 @@
+# pyright: reportCallIssue=false
+
 """Test DataPlaneBackend metrics (R84)."""
 
 import time

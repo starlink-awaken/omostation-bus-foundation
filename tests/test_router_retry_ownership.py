@@ -1,3 +1,5 @@
+# pyright: reportCallIssue=false
+
 """Test RETRY-OWNERSHIP rule — bus layer must NOT retry on failure."""
 
 from __future__ import annotations

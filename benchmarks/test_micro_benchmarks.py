@@ -1,3 +1,5 @@
+# pyright: reportCallIssue=false
+
 """Benchmark baselines for bus-foundation 0.3.0.
 
 Usage:

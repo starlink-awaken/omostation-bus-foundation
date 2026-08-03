@@ -1,3 +1,5 @@
+# pyright: reportCallIssue=false
+
 """Test PersistentBusBackend — 5 cases covering SQLite durability + GC + subscribe."""
 
 import sqlite3

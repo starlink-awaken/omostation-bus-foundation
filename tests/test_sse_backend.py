@@ -24,7 +24,7 @@ def test_publish_dispatches_to_subscribers() -> None:
         received.append(env)
 
     backend.subscribe("sse-test:*", cb)
-    env = BusEnvelope(type="sse-test:ping", source="x", payload={"k": 1})
+    env = BusEnvelope(type="sse-test:ping", source="x", payload={"k": 1})  # type: ignore[reportCallIssue]
     backend.publish(env)
     assert len(received) == 1
 

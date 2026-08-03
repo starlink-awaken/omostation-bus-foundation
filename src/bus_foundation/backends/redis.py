@@ -56,7 +56,7 @@ class RedisBackend:
 
     def _lazy_import(self) -> Any:
         if self._redis_module is None:
-            import redis
+            import redis  # type: ignore[reportMissingImports]
 
             self._redis_module = redis
         return self._redis_module

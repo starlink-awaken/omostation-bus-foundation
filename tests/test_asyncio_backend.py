@@ -16,7 +16,7 @@ async def test_publish_queues_envelope_for_subscriber() -> None:
         received.append(env)
 
     backend.subscribe("asyncio-test:*", cb)
-    env = BusEnvelope(type="asyncio-test:ping", source="x", payload={"k": 1})
+    env = BusEnvelope(type="asyncio-test:ping", source="x", payload={"k": 1})  # type: ignore[reportCallIssue]
     backend.publish(env)
     # Give the drain task a chance to dispatch.
     await asyncio.sleep(0.05)

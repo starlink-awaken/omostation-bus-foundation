@@ -13,10 +13,10 @@ from bus_foundation.envelope import OmniEnvelope
 
 
 @pytest.fixture
-def cp(tmp_path: Path) -> ControlPlaneBackend:
+def cp(tmp_path: Path) -> ControlPlaneBackend:  # type: ignore[reportInvalidTypeForm]
     db = tmp_path / "test_control.db"
     backend = ControlPlaneBackend(db_path=db, poll_interval=0.05)
-    yield backend
+    yield backend  # type: ignore[reportReturnType]
     backend.close()
 
 

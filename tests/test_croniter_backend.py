@@ -87,7 +87,7 @@ class TestCroniterBackend:
         it enqueues a one-shot job so the BusBackend Protocol contract
         holds and Router won't mistake this backend for broken."""
         b = CroniterBackend()
-        env = BusEnvelope(type="cron:test", source="x", payload={"k": 1})
+        env = BusEnvelope(type="cron:test", source="x", payload={"k": 1})  # type: ignore[reportCallIssue]
         result = b.publish(env)
         assert isinstance(result, str) and result
 

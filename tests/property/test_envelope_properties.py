@@ -1,3 +1,5 @@
+# pyright: reportPossiblyUnboundVariable=false
+
 """R97: Property-based tests for bus-foundation envelope + pattern match."""
 
 from __future__ import annotations

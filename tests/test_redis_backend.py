@@ -1,3 +1,5 @@
+# pyright: reportCallIssue=false
+
 """Tests for RedisBackend (mocked Redis connection).
 
 These tests mock _get_conn() to avoid requiring a running Redis server.

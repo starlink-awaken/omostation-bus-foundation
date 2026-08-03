@@ -44,8 +44,8 @@ def test_publish_subscribe_integration() -> None:
         received.append(env)
 
     env = BusEnvelope(
-        type="cross-repo-smoke:ping",
-        source="test_cross_repo_smoke",
+        type="cross-repo-smoke:ping",  # type: ignore[reportCallIssue]
+        source="test_cross_repo_smoke",  # type: ignore[reportCallIssue]
         payload={"k": "v"},
     )
     event_id = publish(env)

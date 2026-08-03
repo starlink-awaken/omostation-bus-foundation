@@ -97,7 +97,7 @@ class TestEndToEndPublish:
         """Trace context in caller propagates to envelope at publish."""
         from bus_foundation import publish
 
-        env = BusEnvelope(topic="trace:test", payload={"x": 1}, event_type=EventType.PIPELINE_COMPLETED)
+        env = BusEnvelope(topic="trace:test", payload={"x": 1}, event_type=EventType.PIPELINE_COMPLETED)  # type: ignore[reportCallIssue]
         env.trace_id = ""  # clear
         with trace("caller_op") as span:
             publish(env)

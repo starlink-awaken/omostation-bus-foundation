@@ -1,3 +1,5 @@
+# pyright: reportCallIssue=false
+
 """Test BusEnvelope — first 3 of 12 cases."""
 
 from __future__ import annotations

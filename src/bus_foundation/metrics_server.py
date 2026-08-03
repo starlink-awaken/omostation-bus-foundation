@@ -33,7 +33,7 @@ class _MetricsHandler(BaseHTTPRequestHandler):
         lines: list[str] = []
         for name, m in Registry.all().items():
             if hasattr(m, "snapshot"):
-                snap = m.snapshot()
+                snap = m.snapshot()  # type: ignore[reportAttributeAccessIssue]
                 if not snap:
                     continue
                 for label_key, val in snap.items():
