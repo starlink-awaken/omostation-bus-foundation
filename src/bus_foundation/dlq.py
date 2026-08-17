@@ -111,13 +111,13 @@ class DLQ:
                 capture_output=True,
                 timeout=30,
             )
-        except Exception:  # noqa: BLE001
+        except Exception:
             pass
         # Create the archive.
         try:
             with tarfile.open(str(archive_path), "w:gz") as tar:
                 tar.add(str(self.db_path), arcname=self.db_path.name)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             logger.error("dlq_archive_failed path=%s err=%s", archive_path, e)
             # Fallback: hard rename (same as the old behaviour).
             old = self.db_path.with_suffix(".db.old")
@@ -199,7 +199,7 @@ class DLQ:
         with self._lock:
             row = self._conn.execute("SELECT retries FROM dlq WHERE event_id = ?", (event_id,)).fetchone()
             if row is None:
-                logger.warning("dlq_requeue_missing", event_id)
+                logger.warning("dlq_requeue_missing: %s", event_id)
                 return
             new_retries = row["retries"] + 1
             new_status = "DLQ" if new_retries >= DLQ_MAX_RETRIES else "PENDING"

@@ -62,7 +62,7 @@ class WebSocketServerHandleV2:
     def start(self) -> None:
         if self._started:
             return
-        if not _importlib_util.find_spec("websockets"):  # noqa: F811
+        if not _importlib_util.find_spec("websockets"):
             raise ImportError(
                 "WebSocket real transport requires the 'websockets' library. "
                 "Install with: pip install bus-foundation[ws]"
@@ -80,7 +80,7 @@ class WebSocketServerHandleV2:
                 logger.warning("ws_v2_compression_unavailable: permessage_deflate not found")
 
         def _run() -> None:
-            import websockets  # type: ignore[import-not-found]  # noqa: F811,F401
+            import websockets  # type: ignore[import-not-found]
 
             async def _handler(ws: Any) -> None:
                 ws._bus_patterns = set()
@@ -114,7 +114,7 @@ class WebSocketServerHandleV2:
                             ws.send(json.dumps({"type": "ping"})),
                             timeout=HEARTBEAT_TIMEOUT,
                         )
-                    except Exception:  # noqa: BLE001
+                    except Exception:
                         logger.debug("ws_heartbeat_failed id=%s", getattr(ws, "id", "?"))
                         break
 
@@ -223,7 +223,7 @@ class WebSocketBackendV2:
                 env = await queue.get()
                 try:
                     callback(env)
-                except Exception as e:  # noqa: BLE001
+                except Exception as e:
                     logger.error("ws_callback_error client_id=%s err=%s", client_id, e)
         except asyncio.CancelledError:
             logger.debug("ws_drain_cancelled client_id=%s", client_id)
@@ -302,7 +302,7 @@ class WebSocketBackendV2:
             loop: asyncio.AbstractEventLoop | None = None
             try:
                 loop = getattr(srv, "loop", None)
-            except Exception:  # noqa: BLE001
+            except Exception:
                 loop = None
             # Cancel all WS connections gracefully (only if a running
             # loop is reachable; otherwise the daemon thread is already
@@ -311,14 +311,14 @@ class WebSocketBackendV2:
                 for ws in list(self._ws_connections):
                     try:
                         asyncio.run_coroutine_threadsafe(ws.close(), loop)
-                    except Exception:  # noqa: BLE001
+                    except Exception:
                         pass
                 # Cancel the sentinel future so _main() exits cleanly.
                 sentinel = getattr(srv, "_sentinel", None)
                 if sentinel is not None:
                     try:
                         loop.call_soon_threadsafe(sentinel.cancel)
-                    except Exception:  # noqa: BLE001
+                    except Exception:
                         pass
             self._ws_connections.clear()
         self._clients.clear()

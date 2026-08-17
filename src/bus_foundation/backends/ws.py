@@ -79,7 +79,7 @@ class WebSocketServerHandle:
         if self._started:
             return
         try:
-            import websockets  # type: ignore[import-not-found]  # noqa: F401
+            import websockets  # type: ignore[import-not-found]
         except ImportError as e:
             raise ImportError(
                 "WebSocket real transport requires the 'websockets' library. "
@@ -250,7 +250,7 @@ class WebSocketBackend:
                 env = await queue.get()
                 try:
                     callback(env)
-                except Exception as e:  # noqa: BLE001
+                except Exception as e:
                     logger.error("ws_callback_error client_id=%s err=%s", client_id, e)
         except asyncio.CancelledError:
             logger.debug("ws_drain_cancelled client_id=%s", client_id)
@@ -313,7 +313,7 @@ class WebSocketBackend:
                     asyncio.ensure_future(coro)
             except RuntimeError:
                 pass
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             logger.error(
                 "ws_publish_dispatch_error client=%s err=%s",
                 getattr(ws, "id", "?"),
@@ -327,7 +327,7 @@ class WebSocketBackend:
         if server is not None:
             try:
                 server.close()
-            except Exception:  # noqa: BLE001
+            except Exception:
                 pass
         task = self._server_task
         self._server_task = None
@@ -342,7 +342,7 @@ class WebSocketBackend:
                 if loop is not None and loop.is_running():
                     close_coro = ws.close()
                     loop.create_task(close_coro)
-            except Exception:  # noqa: BLE001
+            except Exception:
                 pass
         self._ws_connections.clear()
 

@@ -35,7 +35,7 @@ from bus_foundation.backends.pattern_match import match_pattern
 from bus_foundation.envelope import BusEnvelope
 
 if TYPE_CHECKING:
-    import zmq as _zmq_typing  # noqa: F401  (for type checkers only)
+    import zmq as _zmq_typing
 
 logger = logging.getLogger(__name__)
 
@@ -117,7 +117,7 @@ class ZeroMQBackend:
     def is_available(self) -> bool:
         try:
             return self._pub_socket.closed is False
-        except Exception:  # noqa: BLE001
+        except Exception:
             return False
 
     def publish(self, envelope: BusEnvelope) -> str:
@@ -149,7 +149,7 @@ class ZeroMQBackend:
                 message = self._sub_socket.recv_string()
             except zmq_mod.Again:  # type: ignore[attr-defined]
                 continue  # timeout, check stop_event
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 if self._stop_event.is_set():
                     break
                 logger.error("zmq_recv_error: %s", e)
@@ -157,7 +157,7 @@ class ZeroMQBackend:
 
             try:
                 env = BusEnvelope.from_json(message)
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 logger.error("zmq_deserialize_error: %s", e)
                 continue
 
@@ -168,7 +168,7 @@ class ZeroMQBackend:
                 if match_pattern(pattern, env.type):
                     try:
                         callback(env)
-                    except Exception as e:  # noqa: BLE001
+                    except Exception as e:
                         logger.error("zmq_callback_error sub_id=%s err=%s", sub_id, e)
 
     def bind_pub(self, address: str) -> None:
@@ -189,13 +189,13 @@ class ZeroMQBackend:
             if sock is not None:
                 try:
                     sock.close()
-                except Exception:  # noqa: BLE001
+                except Exception:
                     pass
 
     def __del__(self) -> None:
         try:
             self.close()
-        except Exception:  # noqa: BLE001
+        except Exception:
             pass  # never let __del__ raise
 
 

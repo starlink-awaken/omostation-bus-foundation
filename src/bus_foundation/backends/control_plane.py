@@ -85,7 +85,7 @@ class ControlPlaneBackend(SqliteBase):
     def is_available(self) -> bool:
         try:
             return self.db_path.parent.exists()
-        except Exception:  # noqa: BLE001
+        except Exception:
             return False
 
     def publish(self, envelope: OmniEnvelope) -> str:
@@ -162,14 +162,14 @@ class ControlPlaneBackend(SqliteBase):
                         continue
                     try:
                         env = OmniEnvelope.from_json(row["envelope_json"])
-                    except Exception as e:  # noqa: BLE001
+                    except Exception as e:
                         logger.error("control_decode_error task_id=%s err=%s", row["id"], e)
                         continue
                     safe_call(callback, env, ctx="control_plane", sub_id=sub_id)
                     with self._lock:
                         self._dispatched.setdefault(sub_id, set()).add(row["id"])
                 stop.wait(self._poll_interval)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             logger.error("control_poll_crashed sub_id=%s err=%s", sub_id, e)
 
     def _fetch_pending(self, pattern: str) -> list[sqlite3.Row]:
@@ -250,7 +250,7 @@ class ControlPlaneBackend(SqliteBase):
                     },
                     source_uri="bos://capability/bus/control_plane",
                 )
-            except Exception as ex:  # noqa: BLE001
+            except Exception as ex:
                 logger.critical("Failed to emit system.fatal.dlq event: %s", ex)
         return True
 

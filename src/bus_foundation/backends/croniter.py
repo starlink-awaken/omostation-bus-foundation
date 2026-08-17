@@ -404,5 +404,5 @@ class CroniterBackend:
             for _jid, cb in due:
                 try:
                     cb()
-                except Exception as e:  # noqa: BLE001
+                except Exception as e:
                     logger.error("croniter_callback_error err=%s", e)

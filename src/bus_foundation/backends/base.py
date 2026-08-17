@@ -31,7 +31,7 @@ def safe_call(
     """
     try:
         callback(envelope)
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         ctx_part = f" {ctx}" if ctx else ""
         sub_part = f" sub_id={sub_id}" if sub_id else ""
         logger.error("callback_error%s%s err=%s", ctx_part, sub_part, e)

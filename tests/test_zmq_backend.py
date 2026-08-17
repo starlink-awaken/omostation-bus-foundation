@@ -23,11 +23,11 @@ import pytest
 # docstring + a `pytest.importorskip` invocation to actually trigger
 # the skip behavior.
 try:
-    import zmq as _zmq_module  # type: ignore[import-not-found]  # noqa: F401
+    import zmq as _zmq_module  # type: ignore[import-not-found]
 except ImportError:
     pytest.importorskip("zmq", reason="pyzmq not installed; install bus-foundation[zmq]")
 
-import zmq  # type: ignore[import-untyped,import-not-found]  # noqa: F401
+import zmq  # type: ignore[import-untyped,import-not-found]
 
 from bus_foundation.backends.base import BusBackend
 from bus_foundation.backends.zmq import ZeroMQBackend

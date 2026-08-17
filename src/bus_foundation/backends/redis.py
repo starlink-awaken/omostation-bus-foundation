@@ -69,7 +69,7 @@ class RedisBackend:
         try:
             r = self._get_conn()
             return r.ping()
-        except Exception:  # noqa: BLE001
+        except Exception:
             return False
 
     def publish(self, envelope: BusEnvelope) -> str:
@@ -77,7 +77,7 @@ class RedisBackend:
             r = self._get_conn()
             r.publish(self._channel, envelope.to_json())
             return envelope.id
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             logger.error("redis_publish_failed channel=%s error=%s", self._channel, e)
             raise
 
@@ -101,19 +101,19 @@ class RedisBackend:
                         continue
                     try:
                         env = BusEnvelope.from_json(data)
-                    except Exception:  # noqa: BLE001
+                    except Exception:
                         continue
                     if match_pattern(pattern, env.type):
                         try:
                             callback(env)
-                        except Exception as e:  # noqa: BLE001
+                        except Exception as e:
                             logger.error("redis_subscribe_callback_error sub_id=%s error=%s", sub_id, e)
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 logger.error("redis_listener_exception sub_id=%s error=%s", sub_id, e)
             finally:
                 try:
                     pubsub.close()
-                except Exception:  # noqa: BLE001
+                except Exception:
                     pass
 
         thread = threading.Thread(target=_listener, daemon=True, name=f"bus-redis-{sub_id[:8]}")
@@ -133,7 +133,7 @@ class RedisBackend:
             _pattern, _cb, pubsub, thread = entry
         try:
             pubsub.close()
-        except Exception:  # noqa: BLE001
+        except Exception:
             pass
         thread.join(timeout=2.0)
         return True

@@ -133,7 +133,7 @@ class DataPlaneBackend:
                 continue
             try:
                 callback(filtered)
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 logger.error(
                     "DataPlane subscriber %s failed during batch flush: %s",
                     sub_id,

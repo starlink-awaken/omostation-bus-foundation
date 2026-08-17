@@ -72,7 +72,7 @@ class RealtimeBackend:
                 # callback can stay single-arg and Protocol-compliant.
                 envelope.retry_count = version
                 cb(envelope)
-            except Exception as e:  # noqa: BLE001  # defensive fallback
+            except Exception as e:  # defensive fallback
                 logger.error("realtime_callback_error task_id=%s err=%s", task_id, e)
         return envelope.id
 

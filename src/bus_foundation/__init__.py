@@ -33,7 +33,7 @@ from bus_foundation.metrics import Registry as _MetricsRegistry
 
 # R89: metrics surface (default OFF, zero overhead)
 from bus_foundation.metrics import snapshot as metrics_snapshot
-from bus_foundation.metrics_instrumentation import (  # noqa: F401  (side-effect: registers metrics)
+from bus_foundation.metrics_instrumentation import (
     record_backend_health,
     record_dlq_depth,
     record_subscribe,
@@ -87,7 +87,7 @@ def disable_metrics() -> None:
 
 
 # R90: retry + circuit breaker surface
-from bus_foundation.retry import (  # noqa: E402
+from bus_foundation.retry import (
     CircuitBreaker,
     CircuitOpenError,
     CircuitState,
@@ -121,7 +121,7 @@ def retry_stats() -> dict:
 
 
 # R92: schema registry surface
-from bus_foundation.schema import (  # noqa: E402
+from bus_foundation.schema import (
     CompatibilityMode,
     SchemaError,
     SchemaRegistry,
@@ -156,7 +156,7 @@ class FallbackLogger:
                 if envelope:
                     f.write(f"Envelope Dump: {envelope.to_json()}\\n")
             print(f"[FALLBACK CRITICAL] {message}", file=sys.stderr)
-        except Exception as e:  # noqa: BLE001  # defensive fallback
+        except Exception as e:  # defensive fallback
             print(f"FATAL: Fallback logger also failed: {e}", file=sys.stderr)
 
 
@@ -177,7 +177,7 @@ _default_dlq = DLQ()
 _router = Router(backend=_default_backend, dlq=_default_dlq)
 
 # R94: trace context surface
-from bus_foundation.observability import (  # noqa: E402
+from bus_foundation.observability import (
     get_current_trace_id,
     trace,
 )
@@ -266,7 +266,7 @@ def publish(envelope: BusEnvelope) -> str:
                 ctx["status"] = "dlq"
                 record_dlq_depth(backend_name, "PENDING", _dlq_count(_default_dlq, "PENDING"))
                 return envelope.id
-            except Exception as e:  # noqa: BLE001  # defensive fallback
+            except Exception as e:  # defensive fallback
                 try:
                     _default_dlq.enqueue(
                         event_id=envelope.id,
@@ -274,12 +274,12 @@ def publish(envelope: BusEnvelope) -> str:
                         envelope_json=envelope.to_json(),
                         error=str(e),
                     )
-                except Exception as dlq_err:  # noqa: BLE001
+                except Exception as dlq_err:
                     _fallback.critical(f"DLQ enqueue failed during publish error handling: {dlq_err}", envelope)
                 ctx["status"] = "dlq"
                 record_dlq_depth(backend_name, "PENDING", _dlq_count(_default_dlq, "PENDING"))
                 return envelope.id
-        except Exception:  # noqa: BLE001  # last-resort: never let metrics break publish
+        except Exception:  # last-resort: never let metrics break publish
             ctx["status"] = "fail"
             return envelope.id
 
@@ -288,7 +288,7 @@ def _dlq_count(dlq: DLQ, status: str) -> int:
     """Helper: count DLQ entries with given status. Cheap O(N) scan; OK for now."""
     try:
         return sum(1 for e in dlq.list_all() if e.get("status") == status)
-    except Exception:  # noqa: BLE001
+    except Exception:
         return 0
 
 

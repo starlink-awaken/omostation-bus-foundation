@@ -145,7 +145,7 @@ def load_user_config() -> RedactionConfig:
         return RedactionConfig()
     try:
         data = yaml.safe_load(path.read_text()) or {}
-    except Exception:  # noqa: BLE001
+    except Exception:
         return RedactionConfig()
     return RedactionConfig(
         extra_patterns=data.get("patterns", []),

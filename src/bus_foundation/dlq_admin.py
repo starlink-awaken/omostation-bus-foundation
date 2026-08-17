@@ -102,7 +102,7 @@ class DLQAdmin:
             try:
                 self.dlq._conn.execute("DELETE FROM dlq WHERE event_id = ?", (eid,))
                 count += 1
-            except Exception:  # noqa: BLE001
+            except Exception:
                 pass
         self.dlq._conn.commit()
         return count
@@ -127,7 +127,7 @@ class DLQAdmin:
                 router.publish(env_dict)
                 self.dlq._conn.execute("DELETE FROM dlq WHERE event_id = ?", (eid,))
                 count += 1
-            except Exception:  # noqa: BLE001
+            except Exception:
                 pass
         self.dlq._conn.commit()
         return count
@@ -147,7 +147,7 @@ class DLQAdmin:
             conditions.append("created_at < ?")
             params.append(before)
         where = " AND ".join(conditions) if conditions else "1=1"
-        deleted = self.dlq._conn.execute(f"DELETE FROM dlq WHERE {where}", params).rowcount  # noqa: UP036
+        deleted = self.dlq._conn.execute(f"DELETE FROM dlq WHERE {where}", params).rowcount
         self.dlq._conn.commit()
         return deleted
 

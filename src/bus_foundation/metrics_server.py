@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 class _MetricsHandler(BaseHTTPRequestHandler):
-    def do_GET(self) -> None:  # noqa: N802
+    def do_GET(self) -> None:
         if self.path != "/metrics":
             self.send_error(404, "Not Found")
             return
@@ -50,7 +50,7 @@ class _MetricsHandler(BaseHTTPRequestHandler):
                         lines.append(f"{name}{labels_str} {val}")
         return "\n".join(lines) + "\n"
 
-    def log_message(self, format: str, *args: object) -> None:  # noqa: A002
+    def log_message(self, format: str, *args: object) -> None:
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(format, *args)
 

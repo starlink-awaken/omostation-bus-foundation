@@ -72,7 +72,7 @@ class TestEnvelopeAttachment:
     def test_attach_propagates_trace_id(self):
         env = BusEnvelope(topic="t", payload={"x": 1})
         env.trace_id = ""  # clear
-        with trace("pub") as span:  # noqa: F841
+        with trace("pub") as span:
             attach_to_envelope(env)
         assert env.trace_id == span.trace_id
 

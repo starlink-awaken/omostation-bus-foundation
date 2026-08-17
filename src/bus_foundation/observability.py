@@ -84,14 +84,14 @@ class Span:
         if self._otel_span is not None:
             try:
                 self._otel_span.set_attribute(key, value)  # type: ignore[attr-defined]
-            except Exception:  # noqa: BLE001
+            except Exception:
                 pass
 
     def end(self) -> None:
         if self._otel_span is not None:
             try:
                 self._otel_span.end()  # type: ignore[attr-defined]
-            except Exception:  # noqa: BLE001
+            except Exception:
                 pass
 
 
@@ -128,7 +128,7 @@ def trace(
         span._otel_span = otel_span
     except ImportError:
         pass  # OTel not installed, use pure-stdlib
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         logger.debug("otel_adapter_init_failed: %s", e)
 
     token_trace = _current_trace_id.set(span.trace_id)

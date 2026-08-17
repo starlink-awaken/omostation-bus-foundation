@@ -227,7 +227,7 @@ def with_retry[T](backend: str, func: Callable[[], T]) -> T:
             if attempt > 1:
                 RETRY_ATTEMPTED.inc(backend=backend, outcome="success")
             return result
-        except policy.retry_on as e:  # noqa: PERF203  # intentional retry
+        except policy.retry_on as e:  # intentional retry
             last_exc = e
             breaker.record_failure()
             _publish_breaker_state(backend, breaker)

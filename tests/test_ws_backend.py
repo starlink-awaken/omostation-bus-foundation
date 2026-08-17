@@ -90,7 +90,7 @@ def _free_port() -> int:
 
 def _require_websockets() -> None:
     try:
-        import websockets  # type: ignore[import-not-found]  # noqa: F401
+        import websockets  # type: ignore[import-not-found]
     except ImportError:
         pytest.skip("websockets not installed; pip install bus-foundation[ws]")
 
@@ -196,7 +196,7 @@ class TestWebSocketServer:
                 try:
                     extra = ws.recv(timeout=0.5)
                     assert json.loads(extra)["envelope"]["topic"] != "bar:thing"
-                except Exception:  # noqa: BLE001
+                except Exception:
                     pass  # timeout is the success case
         finally:
             handle.stop()

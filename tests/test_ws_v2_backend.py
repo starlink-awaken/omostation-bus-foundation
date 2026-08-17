@@ -156,7 +156,7 @@ def _free_port() -> int:
 
 def _require_websockets() -> None:
     try:
-        import websockets  # noqa: F401
+        import websockets
     except ImportError:
         pytest.skip("websockets not installed; pip install bus-foundation[ws]")
 

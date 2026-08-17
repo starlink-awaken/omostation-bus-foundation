@@ -28,7 +28,7 @@ from typing import Any
 
 import httpx  # type: ignore[reportMissingImports]
 
-from bus_foundation import BusEnvelope  # noqa: F401
+from bus_foundation import BusEnvelope
 from bus_foundation.backends.data_plane import DataPlaneBackend
 from bus_foundation.envelope import OmniEnvelope
 

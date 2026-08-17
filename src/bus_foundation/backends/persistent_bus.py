@@ -112,7 +112,7 @@ class PersistentBusBackend(SqliteBase):
     def is_available(self) -> bool:
         try:
             return self.db_path.parent.exists()
-        except Exception:  # noqa: BLE001  # defensive fallback
+        except Exception:  # defensive fallback
             return False
 
     def publish(self, envelope: BusEnvelope) -> str:
@@ -254,7 +254,7 @@ class PersistentBusBackend(SqliteBase):
                                 continue
                         try:
                             env = BusEnvelope.from_json(row["envelope_json"])
-                        except Exception as e:  # noqa: BLE001
+                        except Exception as e:
                             logger.error(
                                 "persistent_tail_decode_error sub_id=%s err=%s",
                                 sub_id,
@@ -270,7 +270,7 @@ class PersistentBusBackend(SqliteBase):
                         with self._lock:
                             self._watermarks[sub_id] = new_watermark
                 stop_event.wait(self._poll_interval)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             logger.error("persistent_tail_crashed sub_id=%s err=%s", sub_id, e)
 
     def _cleanup_subs(self) -> None:
