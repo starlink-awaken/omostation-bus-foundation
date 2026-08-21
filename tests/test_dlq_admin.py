@@ -13,6 +13,13 @@ from bus_foundation.dlq import DLQ
 from bus_foundation.dlq_admin import DLQAdmin
 from bus_foundation.dlq_redaction import RedactionConfig, Redactor
 
+# The DLQ admin CLI (`bin/ssot/bus-dlq`) lives in the root monorepo, not in
+# this standalone repo. It reaches bus_foundation via a monorepo-relative
+# sys.path, so it only runs inside the root checkout. When it is absent (the
+# standalone CI run), skip the CLI tests instead of failing them.
+_BUS_DLQ_CLI = Path(__file__).resolve().parent.parent.parent.parent / "bin" / "ssot" / "bus-dlq"
+_BUS_DLQ_CLI_PRESENT = _BUS_DLQ_CLI.exists()
+
 
 @pytest.fixture
 def tmp_dlq(tmp_path: Path) -> DLQ:  # type: ignore[reportInvalidTypeForm]
@@ -127,6 +134,10 @@ class TestDLQAdmin:
             admin.close()
 
 
+@pytest.mark.skipif(
+    not _BUS_DLQ_CLI_PRESENT,
+    reason="requires root monorepo bin/ssot/bus-dlq (not present in standalone bus-foundation repo)",
+)
 class TestBusDLQCLI:
     @pytest.fixture
     def workspace_root(self) -> Path:
