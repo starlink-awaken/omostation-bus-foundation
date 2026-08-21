@@ -22,12 +22,12 @@ jobs:
       - name: Compare with baseline
         run: |
           python3 -c "
-import json, sys
-with open('output.json') as f:
-    data = json.load(f)
-baseline = data.get('benchmarks', [])
-for b in baseline:
-    name = b['fullname']
-    mean = b['stats']['mean']
-    print(f'{name}: {mean*1000:.2f}ms')
-"
+          import json, sys
+          with open('output.json') as f:
+              data = json.load(f)
+          baseline = data.get('benchmarks', [])
+          for b in baseline:
+              name = b['fullname']
+              mean = b['stats']['mean']
+              print(f'{name}: {mean*1000:.2f}ms')
+          "
