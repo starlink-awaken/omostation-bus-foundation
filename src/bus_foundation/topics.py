@@ -70,6 +70,14 @@ MESH_ROUTE = "mesh:route"
 SWARM_STEP = "swarm:step"
 LLM_CALL = "llm:call"
 
+# ── workflow mesh (resident event ingest) ──────────────────────────
+MESH_WORKFLOW_REQUESTED = "mesh:workflow:requested"
+MESH_WORKFLOW_STARTED = "mesh:workflow:started"
+MESH_WORKFLOW_CLOSED = "mesh:workflow:closed"
+MESH_WORKFLOW_FAILED = "mesh:workflow:failed"
+MESH_STEP_FAILED = "mesh:step:failed"
+MESH_EVENT_RAW = "mesh:event:raw"
+
 # ── cockpit ───────────────────────────────────────────────────────
 COCKPIT_OMOS_BROADCAST = "cockpit:omos:broadcast"
 COCKPIT_SYSTEM_MAP = "cockpit:system_map"
@@ -143,6 +151,13 @@ __all__ = [
     "MESH_ROUTE",
     "SWARM_STEP",
     "LLM_CALL",
+    # workflow mesh (resident event ingest)
+    "MESH_WORKFLOW_REQUESTED",
+    "MESH_WORKFLOW_STARTED",
+    "MESH_WORKFLOW_CLOSED",
+    "MESH_WORKFLOW_FAILED",
+    "MESH_STEP_FAILED",
+    "MESH_EVENT_RAW",
     # cockpit
     "COCKPIT_OMOS_BROADCAST",
     "COCKPIT_SYSTEM_MAP",
