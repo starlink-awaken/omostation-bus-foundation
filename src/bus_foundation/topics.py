@@ -92,6 +92,16 @@ OMO_HEALING_TRIGGERED = "omo:healing:triggered"
 OMO_MESH_NODE_WRITTEN = "omo:mesh:node:written"
 PATTERN_OMO_ALL = "omo:*"
 
+# ── harness (self-evolving) ────────────────────────────────────
+HARNESS_ARCH_UPGRADE = "harness:arch:upgrade"
+HARNESS_FEATURE_ADD = "harness:feature:add"
+HARNESS_BUG_FIX = "harness:bug:fix"
+HARNESS_EXPERIENCE = "harness:experience:optimize"
+HARNESS_DOC_GOVERNANCE = "harness:doc:governance"
+HARNESS_TOOLCHAIN = "harness:toolchain:update"
+HARNESS_BUSINESS_PROCESS = "harness:business:process"
+PATTERN_HARNESS_ALL = "harness:*"
+
 # ── wildcard patterns (for facade.event.subscribe(...)) ──────────
 # Note: the bus pattern matcher uses `*` as a STRING PREFIX, not glob.
 # So `pipeline:*` matches "pipeline:completed" / "pipeline:started" etc.
@@ -168,6 +178,15 @@ __all__ = [
     "OMO_AUDIT_FAILED",
     "OMO_HEALING_TRIGGERED",
     "OMO_MESH_NODE_WRITTEN",
+    # harness
+    "HARNESS_ARCH_UPGRADE",
+    "HARNESS_FEATURE_ADD",
+    "HARNESS_BUG_FIX",
+    "HARNESS_EXPERIENCE",
+    "HARNESS_DOC_GOVERNANCE",
+    "HARNESS_TOOLCHAIN",
+    "HARNESS_BUSINESS_PROCESS",
+    "PATTERN_HARNESS_ALL",
     # patterns
     "PATTERN_PIPELINE_ALL",
     "PATTERN_DEBT_ALL",
