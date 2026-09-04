@@ -1,3 +1,10 @@
+---
+type: derived
+source: projects/bus-foundation
+owner: governance-team
+last_updated: 2026-09-03
+---
+
 # bus-foundation Documentation
 
 > X · Omni-Bus Data/Event/Control

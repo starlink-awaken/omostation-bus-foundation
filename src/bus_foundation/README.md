@@ -1,3 +1,10 @@
+---
+type: derived
+source: projects/bus-foundation
+owner: governance-team
+last_updated: 2026-09-03
+---
+
 # bus-foundation — 统一接口层 (Phase B, R66)
 
 > Split out of `agora/bus/` in R66 as part of the Phase B bus-unification plan.
