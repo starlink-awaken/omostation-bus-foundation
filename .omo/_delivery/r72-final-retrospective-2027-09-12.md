@@ -1,3 +1,9 @@
+---
+type: ssot
+owner: governance-team
+last_updated: 2026-09-03
+---
+
 # R72 (Month 3) — Phase C Final Close + 14-Month Retrospective
 
 > Date: 2026-06-12 (committed as 2027-09-12 per R-series naming)

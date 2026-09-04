@@ -1,3 +1,9 @@
+---
+type: ssot
+owner: governance-team
+last_updated: 2026-09-03
+---
+
 # AGENTS.md — bus-foundation
 
     > Scope: project-local developer guide for `bus-foundation`.

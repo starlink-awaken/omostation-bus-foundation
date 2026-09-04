@@ -1,3 +1,9 @@
+---
+type: ssot
+owner: governance-team
+last_updated: 2026-09-03
+---
+
 # Retry Ownership Rule (R57+, R66 split)
 
 ## 核心规则

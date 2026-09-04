@@ -1,3 +1,9 @@
+---
+type: ssot
+owner: governance-team
+last_updated: 2026-09-03
+---
+
 # R74 — 5 LOW review fixes applied
 
 > Date: 2026-06-13

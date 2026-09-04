@@ -1,3 +1,9 @@
+---
+type: ssot
+owner: governance-team
+last_updated: 2026-09-03
+---
+
 # bus-foundation API / Usage Reference
 
 > Quick reference for using **bus-foundation** programmatically and from the command line.

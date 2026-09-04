@@ -1,3 +1,9 @@
+---
+type: ssot
+owner: governance-team
+last_updated: 2026-09-03
+---
+
 # bus-foundation 能力地图
 
 > Omni-Bus 三平面 (Data/Event/Control) 统一接口 · X 层横切

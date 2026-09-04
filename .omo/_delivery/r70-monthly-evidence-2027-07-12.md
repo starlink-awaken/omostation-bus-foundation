@@ -1,3 +1,9 @@
+---
+type: ssot
+owner: governance-team
+last_updated: 2026-09-03
+---
+
 # R70 (Month 1) Close Evidence — Phase C Evaluation Begins
 
 > Date: 2026-06-12 (committed as 2027-07-12 per R-series naming)

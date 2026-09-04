@@ -1,3 +1,9 @@
+---
+type: ssot
+owner: governance-team
+last_updated: 2026-09-03
+---
+
 # bus-foundation 性能 SLA (0.3.0)
 
 > 基于 R87 benchmark + R89 metrics 的官方性能目标。

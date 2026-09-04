@@ -1,3 +1,9 @@
+---
+type: ssot
+owner: governance-team
+last_updated: 2026-09-03
+---
+
 # Owners — bus-foundation
 
 This file lists the maintainers responsible for the bus-foundation package.

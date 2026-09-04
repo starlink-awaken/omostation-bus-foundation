@@ -1,3 +1,9 @@
+---
+type: ssot
+owner: governance-team
+last_updated: 2026-09-03
+---
+
 # ADR-0003: No L0 Protocol Layer Promotion
 
 > Status: Accepted (R76, 2026-06-13)

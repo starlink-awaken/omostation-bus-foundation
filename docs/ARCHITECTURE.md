@@ -1,3 +1,9 @@
+---
+type: ssot
+owner: governance-team
+last_updated: 2026-09-03
+---
+
 # bus-foundation Architecture
 
 > Architecture overview for **bus-foundation**. For the full workspace architecture, see [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md).

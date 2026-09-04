@@ -1,3 +1,9 @@
+---
+type: ssot
+owner: governance-team
+last_updated: 2026-09-03
+---
+
 # R73 Code Review — 3 new backends
 
 > Date: 2026-06-13

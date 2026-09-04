@@ -1,3 +1,9 @@
+---
+type: ssot
+owner: governance-team
+last_updated: 2026-09-03
+---
+
 # R77 Governance Audit — 2026-06-13
 
 > Full governance, documentation, and configuration audit.

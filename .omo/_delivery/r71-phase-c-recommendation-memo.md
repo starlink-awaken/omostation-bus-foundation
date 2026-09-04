@@ -1,3 +1,9 @@
+---
+type: ssot
+owner: governance-team
+last_updated: 2026-09-03
+---
+
 # R71 (Month 2) — Phase C Recommendation Memo
 
 > Date: 2026-06-12 (committed as 2027-08-12 per R-series naming)
