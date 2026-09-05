@@ -2,3 +2,6 @@
 __pycache__/
 *.pyc
 *.pyo
+
+# OMC runtime state (sessions/state/project-memory) — 与主仓 .gitignore 对齐, 不入库
+.omc/
