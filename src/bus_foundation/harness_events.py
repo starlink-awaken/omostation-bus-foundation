@@ -13,6 +13,7 @@ HarnessEventType = Literal[
     "harness:business:process",
 ]
 
+
 @dataclass(frozen=True)
 class HarnessEvent:
     type: HarnessEventType
