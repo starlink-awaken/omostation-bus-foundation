@@ -2,6 +2,7 @@
 type: ssot
 owner: governance-team
 last_updated: 2026-09-03
+last-reviewed: 2026-09-18
 ---
 
 # ADR-0002: Phase C Trigger Reality — 8-Month Audit (DRAFT, not yet ratified)

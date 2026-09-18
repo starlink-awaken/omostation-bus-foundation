@@ -3,6 +3,8 @@ type: derived
 source: projects/bus-foundation
 owner: governance-team
 last_updated: 2026-09-03
+last-reviewed: 2026-09-18
+
 ---
 
 # bus-foundation
