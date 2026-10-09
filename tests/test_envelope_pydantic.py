@@ -90,6 +90,18 @@ class TestPydanticMigration:
         )
         assert env.plane == "CONTROL"
 
+    def test_plane_invalid_value_rejected(self) -> None:
+        """CR-OMNIBUS-01 plane 合取: plane 必须 ∈ {DATA, EVENT, CONTROL}, 'BOGUS' 必须挂."""
+        import pytest
+
+        with pytest.raises(ValueError):
+            OmniEnvelope(topic="x", source="bos://t", plane="BOGUS")
+
+    def test_plane_each_enum_roundtrips(self) -> None:
+        for p in OmniPlane:
+            env = OmniEnvelope(topic="x", source="bos://t", plane=p)
+            assert env.plane == p.value
+
     def test_id_default_is_uuid_hex(self) -> None:
         env = OmniEnvelope(topic="x", source="bos://t")
         # 32 hex chars (no dashes)

@@ -91,7 +91,16 @@ class OmniEnvelope(BaseModel):
             return OmniPlane.EVENT.value
         if isinstance(v, OmniPlane):
             return v.value
-        return v
+        if not isinstance(v, str):
+            raise ValueError(f"invalid plane type: {v!r} — must be an OmniPlane")
+        try:
+            return OmniPlane(v).value
+        except ValueError:
+            # CR-OMNIBUS-01 plane 合取: plane 必须 ∈ {DATA, EVENT, CONTROL}.
+            # 此前任何字符串都会通过 (audit F3, 2026-10-10 收敛).
+            raise ValueError(
+                f"invalid plane: {v!r} — must be one of {[p.value for p in OmniPlane]}"
+            )
 
     @field_validator("topic", mode="before")
     @classmethod
