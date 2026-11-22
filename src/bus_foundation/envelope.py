@@ -98,9 +98,7 @@ class OmniEnvelope(BaseModel):
         except ValueError:
             # CR-OMNIBUS-01 plane 合取: plane 必须 ∈ {DATA, EVENT, CONTROL}.
             # 此前任何字符串都会通过 (audit F3, 2026-10-10 收敛).
-            raise ValueError(
-                f"invalid plane: {v!r} — must be one of {[p.value for p in OmniPlane]}"
-            )
+            raise ValueError(f"invalid plane: {v!r} — must be one of {[p.value for p in OmniPlane]}")
 
     @field_validator("topic", mode="before")
     @classmethod
