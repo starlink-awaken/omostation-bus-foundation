@@ -80,7 +80,7 @@ See `OWNERS.md` for the current maintainer list.
 
 ## 5 hard conditions (re-evaluated monthly)
 
-Per `docs/ADR-0008-bus-foundation-strategy.md`:
+Per `../agora/docs/ADR-0008-bus-foundation-strategy.md` (该 ADR 在 agora 仓):
 
 1. ≥3 projects use `from bus_foundation` (or `from agora.bus`) in production
 2. bus-foundation has ≥180 days git history

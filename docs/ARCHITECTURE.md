@@ -9,7 +9,7 @@ status: active
 
 # bus-foundation Architecture
 
-> Architecture overview for **bus-foundation**. For the full workspace architecture, see [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md).
+> Architecture overview for **bus-foundation**. For the full workspace architecture, see [`../../../ARCHITECTURE.md`](../../../ARCHITECTURE.md).
 
 ## Responsibilities
 
